@@ -1,0 +1,189 @@
+# This is a TOML document. Boom.
+
+"(にらめっこ|笑うと負けよ)" = [
+	{ res = ":daruma: あっぷっぷ！", prob = 1, func="resNiramekko", affection = 2 },
+]
+
+"(なでなで|よしよし|いいこいいこ)" = [
+	{ res = ":blush: ah...i want more...\n:newtoral: はっ！い、いえっなんでもありませんっ！", prob = 10, affection = 3 },
+	{ res = ":blush: あの、もっと…してくださいませんか…？今だけですから…。", prob = 5, affection = 10, public = false },
+	{ res = ":blush: %nickname%に触れられると、不思議と心がやわらぐのは何故なんでしょう…。ひょっとして、頭のツボに秘密があるのでしょうか…？", prob = 30, affection = 3 },
+	{ res = ":blush: %stutter_nick%…は、恥ずかしいでしゅ…", prob = 60, affection = 3 },
+]
+
+"(かわいい|可愛い)" = [
+	{ res = ":smile: ふふっ、ありがとうございます、%nickname%♪", prob = 50, affection = 3},
+	{ res = ":blush: そんな、かわいいだなんて…%nickname%に言われると、なんだか照れてしまいます…。", prob = 30, affection = 3 },
+	{ res = ":blush: （…えへへっ）", prob = 20, affection = 3 },
+	{ res = ":blush: …えへへっ！（ぎゅーっ", prob = 5, affection = 10, public = false },
+]
+
+"またね" = [
+	{ res = ":smile: はい、また遊びにいらしてくださいね♪", prob = 90 },
+	{ res = ":blush: もう、行ってしまわれるのですね…少し、寂しいです…。", prob = 10 },
+]
+
+"こんにちは" = [
+	{ res = "funcで処理", prob = 1, func = "resHello" }
+]
+
+"「.*」.*歌って" = [
+	{ res = "func側で処理", prob = 1, func = "resSingPlease", affection = 3 }
+]
+
+"歌って(?!.*る)" = [
+	{ res = ":smile: 何がよろしいですか？「」をつけてくださいね。\n:blush: まだあまり多くは歌えませんが…", prob = 1 }
+]
+
+"(なに|何)が(でき|出来)る" = [
+	{ res = ":slightly: ご挨拶ができます。朝起きたとき、お仕事に行かれるときなどにお声かけくださいね。", prob = 10 },
+	{ res = ":slightly: この茶室にいる人数を答えることができますよ。", prob = 10 },
+	{ res = ":smile: にらめっこで遊ぶことができますよ。実は、にらめっこには自信があるんです！", prob = 10 },
+	{ res = ":smile: %nickname%、じゃんけんをしましょう！\n:blush: それで、もし私が勝ったら…ご褒美をくださいませんか？", prob = 10 },
+	{ res = ":slightly: 他の大和撫子をお探しのときは、私に聞いてみてください。もしかしたら知っているかもしれません。", prob = 10 },
+	{ res = ":blush: お、お褒めいただくと、何かしら反応いたします…。", prob = 10 },
+	{ res = ":blush: %stutter_nick%のお気持ちは理解しているつもりですが、女の子は、時には口に出して言っていただきたいものなのですよ…？", prob = 3 },
+	{ res = ":thinking: あ、頭が、急に…かゆくなってしまいました～…(ﾁﾗｯ\n:blush: ちょうど手がふさがっていて…ど、どうしましょう～(ﾁﾗｯﾁﾗｯ", prob = 10 },
+]
+
+"(好|す)きだよ" = [
+	{ res = ":smile: ふふっ、ありがとうございます、%nickname%♪\n:desyu: （～～～！！）", prob = 30, affection = 5 },
+	{ res = ":blush: %stutter_nick%…人前でそのような事を言われると…は、恥ずかしいです…。", prob = 40, affection = 5, private = false},
+	{ res = ":smile: はいっ、%nickname%のお気持ちに応えられるような、立派な大和撫子になりますね！", prob = 30, affection = 5 },
+	{ res = ":blush: （こしょこしょ…）", prob = 10, func = "resLovecall", affection = 10, private = false },
+	{ res = ":smile: 私も%nickname%のことが…大好きですっ！…ふふっ♪", prob = 5, affection = 10, public = false },
+	{ res = ":blush: 私も、%nickname%のことが…その………です……。", prob = 10, affection = 5, public = false },
+]
+
+"おはよ" = [
+	{ res = ":smile: おはようございます、%nickname%♪", prob = 1 },
+]
+
+"こんばん" = [
+	{ res = ":slightly: 遅くまでお疲れ様です、%nickname%。無理はなさらないでくださいね？", prob = 1 },
+]
+
+"おやす" = [
+	{ res = ":slightly: お疲れ様でした。ゆっくりお休みくださいね。", prob = 1 },
+]
+
+"ただいま" = [
+	{ res = ":smile: おかえりなさいませ、%nickname%。", prob =  1 },
+]
+
+"(エミリー)*.*おかえり(エミリー)*" = [
+	{ res = ":smile: はいっ！ただいま、%nickname%♪おでかけ楽しかったです～！", prob = 1, affection = 2 }
+]
+
+"(い|行)ってきます" = [
+	{ res = ":smile: お気をつけて。いってらっしゃいませ！", prob = 1 },
+]
+
+"いただきます" = [
+	{ res = ":slightly: 自然の恵みに、そして、私たちを日々応援してくださっているごヒイキさま方に感謝して…いただきます。", prob = 1 },
+]
+
+"ごちそうさま" = [
+	{ res = ":smile: お粗末様でした。食後に温かいお茶などいかがですか？雪歩さんに教えていただいたんです。", prob = 1 },
+]
+
+"(疲|つか)れた" = [
+	{ res = ":newtoral: だ、大丈夫ですか！？私に出来ることは…あっ、肩でもお揉みしましょうか？お茶を入れてきますか？えっと、えっと…！\n:blush: …ほ、抱擁でも…？", prob = 1 }
+]
+
+"(大丈夫|平気)だよ" = [
+	{ res = ":slightly: ご無理はなさらないでくださいね？たまには私を頼ってください。いつも、一番近くで見ていますから…。", prob = 1 }
+]
+
+"ぎゅー" = [
+	{ res = ":blush: %stutter_nick%！？あ、あの…だ、誰かに見られると…その、か、勘違いをされてしまいます…。えっ、何をって…それは、その…はぅぅ…。", prob = 1, affection = 5 }
+]
+
+"(ありがとう|ありがサンキュー)" = [
+	{ res=":smile: どういたしまして。いつも%nickname%には支えて頂いてばかりですから…喜んでいただけたなら、嬉しいです♪", prob = 1, affection=3 }
+]
+
+"(頑張|がんば)ろう" = [
+	{ res = ":smile: はいっ！%nickname%がいてくだされば、百人力…いえ、百万力、ですから！", prob = 70, affection=2 },
+	{ res = ":smile: はいっ！\n:slightly: %nickname%…私の背中、お預けしますね。", prob = 30, affection=2 }
+]
+
+"(慰|なぐさ)めて" = [
+	{ res = "func側で処理", prob = 1, func = "resComfort" }
+]
+"(泣|な)きたい" = [
+	{ res = "func側で処理", prob = 1, func = "resComfort" }
+]
+"しんどい" = [
+	{ res = "func側で処理", prob = 1, func = "resComfort" }
+]
+
+"(じゃんけん.*ぽん|じゃんけん.*ぽん|あいこで.*しょ)" = [
+	{ res = ":smile: ぽんっ！✊", prob = 20, func = "resPlayRPS", affection = 2 },
+	{ res = ":smile: ぽんっ！✌", prob = 20, func = "resPlayRPS", affection = 2 },
+	{ res = ":smile: ぽんっ！✋", prob = 20, func = "resPlayRPS", affection = 2 },
+	{ res = ":smile: ぽんっ♪✊", prob = 20, func = "resPlayRPS", affection = 2 },
+	{ res = ":smile: ぽんっ♪✌", prob = 20, func = "resPlayRPS", affection = 2 },
+	{ res = ":smile: ぽんっ♪✋", prob = 20, func = "resPlayRPS", affection = 2 },
+]
+
+"「(.*)」.*呼んで" = [
+	{ res = "func側で処理", prob = 1, func = "resSetNickName", affection = 1 }
+]
+
+"(\d)分.*教えて" = [
+	{ res = ":smile: %mention% お時間ですよ～！", prob = 1, func = "resSetTimer", affection = 2 }
+]
+
+"(サーバー|茶室).*(何人)" = [
+	{ res = "func側で処理", prob = 1, func = "resCountServerMember" }
+]
+
+"(どこ|知らない？|見なかった？|見てない？)" = [
+	{ res = "func側で処理", prob = 1, func = "resWhereIdol" }
+]
+
+#"予定.*覚えて" = [
+#	{ res = ":slightly: わかりました。帳面に記録しますので、ご予定を教えてください。 `(XX月XX日XX時に〇〇)`", prob = 1, func = "resScheduleInputReady" }
+#]
+
+#"予定.*(見せて|確認)" = [
+#	{ res ="func側で処理", prob = 1, func = "resScheduleCheck"}
+#]
+
+"(自己紹介|名刺).*(どこ|案内|したい)" = [
+	{ res = ":slightly: 自己紹介や名刺交換をされたいのでしたら、 <#407288754227642369> という帳面がございますので、そちらをお使いください。\n:smile: 茶室が賑わうのを見ると、私も嬉しいです。", prob = 1 }
+]
+
+"(雑談|ゲーム).*(どこ|案内|したい)" = [
+	{ res = ":slightly: 劇場に関することや、他の事務所について他のみなさまとお話をされたいときは <#419806128373760021> を。\nそれ以外のご自身の趣味や他の遊戯については、 <#407252417386643486> をお使いくださいね。", prob = 1 }
+]
+
+"抹茶.*(どこ|案内|したい)" = [
+	{ res = ":desyu: Wow! それならぜひ <#415459179524915201> の帳面に書いて、みなさまにも教えてさしあげてください！\n:blush: （後でこっそり私も見に行こっと…♪）", prob = 1 }
+]
+
+"郁原.*(どこ|案内|したい)" = [
+	{ res = ":smile: 郁原ゆうさまについてのお話でしたら、 <#407283958267641856> の帳面をお使いください。\n:slightly: どのような方か私は詳しくはないのですが…その方のお話を聞いていると、なんだか私のことのように幸せな気持ちになるんです…。", prob = 1 }
+]
+
+"ライブ.*(どこ|案内|したい)" = [
+	{ res = ":smile: 私たちの公演について、また贈ってくださる花輪についてのお話は <#407270063658369074> の帳面が使われていますよ。\n:slightly: あっ、感想については、公演が終わるまではなるべく <#407284535240425473> をお使いくださいね。\n:smile: みなさまのご期待に応えられるよう、私も頑張りますね！", prob = 1 }
+]
+
+"ネタバレ.*(どこ|案内|したい)" = [
+	{ res = ":slightly: 公演・放送・遊戯の催しが終了する前に、それらについての感想をお話されるときは <#407284535240425473> の帳面を使い、他のみなさまにご配慮いただきますよう、よろしくお願いしますね。", prob = 1 }
+]
+
+"実況.*(どこ|案内|したい)" = [
+	{ res = ":slightly: 放送の実況をされるときは  <#407277285071388672> をお使いください。\n:smile: みんなで一緒に見ると、一層楽しいですよね。", prob = 1 }
+]
+
+"(茶室|サーバー).*(意見|要望).*(どこ|案内|したい)" = [
+	{ res = ":slightly: 茶室の運用についてのご意見・ご要望がありましたら <#431218466461057024> を用意しておりますので、そちらにどうぞ。みんなでより良い茶室を作ってまいりましょうね。", prob = 1 }
+]
+
+
+"役職の一覧を見せて" = [
+	{ res = "テストです", prob = 1, func="resShowRoles" }
+]

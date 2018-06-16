@@ -1,0 +1,21 @@
+#toml
+
+win = [
+    { res = ":blush: I won! で、では、私が勝ちましたので…その、頭を撫でてはもらえないでしょうか…？", prob = 1 }
+]
+
+lose = [
+    { res = ":thinking: はぅ…ま、負けました…。%nickname%は、じゃんけんもお強いのですね。さすがです！", prob = 1 }
+]
+
+draw = [
+    { res = ":slightly: あっ…あいこですね。%nickname%と同じことを考えていたと思うと、なんだか嬉しいです。\n:smile: では、もう一度！", prob = 1 }
+]
+
+none = [
+    { res = ":daruma: あっ、%nickname%っ！後出しはダメなんですよ！めっ、です！…ふふっ。", prob = 1 }
+]
+
+cheat = [
+    { res = ":daruma: あっ、%nickname%っ！ズルはいけませんよ！もう1回です！", prob = 1 }
+]

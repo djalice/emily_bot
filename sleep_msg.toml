@@ -1,0 +1,16 @@
+sleepin = [
+    {res = ":blush: （うとうと…）", prob = 20 }
+]
+
+sleeping = [
+    { res = ":sleeping: すぅ…すぅ…", prob = 20 },
+    { res = ":sleeping: ん……%sleep_nick%……", prob = 20 },
+    { res = ":sleeping: んん…おいしいれしゅ～…えへへ…♪", prob = 20 },
+    { res = ":sleeping: 私の力でお祓いしなくては！……むにゃ…", prob = 20 },
+    { res = ":sleeping: うぅ……いちめんの…眼鏡畑が……", prob = 20 }
+]
+
+sleepout = [
+    { res = ":blush: ん…おはようございましゅ…", prob = 20 },
+    { res = ":newtoral: いけません、仕掛け人さま！その小籠包を食べて……は……\n:blush: お、おはようございます…", prob = 20 }
+]

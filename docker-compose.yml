@@ -1,0 +1,7 @@
+version: '3'
+services:
+    emily_bot:
+        build: ./
+        container_name: emily
+        restart: always
+

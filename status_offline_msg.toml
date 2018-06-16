@@ -1,0 +1,8 @@
+# ステータスをオフラインにしてコールしたときのレスポンス
+
+response = [
+    { res = ":thinking: oh...?今…確かに呼ばれた気が…。", prob = 20 },
+    { res = ":thinking: %nickname%…？どこにいらっしゃるのですか？", prob = 20 },
+    { res = ":thinking: 姿が見えないのに%nickname%の声が…これはもしや…隠れ身の術！？", prob = 20 },
+    { res = ":blush: （今、%nicknameの声がしたような…会いたいなぁ…。）", prob = 5 }
+]

@@ -1,0 +1,20 @@
+{
+  "name": "emily_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "test.js",
+  "scripts": {
+    "start": "node emily_latest.js"
+  },
+  "dependencies": {
+    "async": "^2.6.0",
+    "dotenv": "^5.0.1",
+    "eris": "^0.8.5",
+    "moment": "^2.22.1",
+    "sleep-async": "^1.0.1",
+    "toml": "^2.3.3"
+  },
+  "devDependencies": {},
+  "author": "",
+  "license": "ISC"
+}
