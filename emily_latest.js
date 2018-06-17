@@ -289,6 +289,7 @@ var STATE = {
     NEUTRAL : 'NEUTRAL',
     SINGING : 'SINGING',
     SLEEPING : 'SLEEPING',
+    WAIT_CALL : 'WAIT_CALL',
     SCHEDULE_INPUT_READY : 'SCHEDULE_INPUT_READY',
     SCHEDULE_INPUT_YESNO : 'SCHEDULE_INPUT_YESNO',
     SCHEDULE_DELETE : 'SCHEDULE_DELETE',
@@ -306,13 +307,13 @@ class EmilyState
     }
 
     setState(s, aid=null) {
-        STATE_LOG("*** " + s + " ***");
         if(aid != null) {
             this.personal_state[aid] = s;
+            STATE_LOG(`setState(${s}, ${aid})`);
         } else {
             this.prev_state = this._state;
             this.state = s;
-            STATE_LOG("state:" + this.state);
+            STATE_LOG(`setState(${s})`);
         }
     }
 
@@ -720,6 +721,10 @@ ${msg_text}
         case STATE.SCHEDULE_DELETE:
             is_force_call = true;
             break;
+        case STATE.WAIT_CALL:
+            is_force_call = true;
+            emily_state.setState(STATE.NEUTRAL, msg.author.id);
+            break;
         default:
             break;
     }
@@ -749,7 +754,6 @@ ${msg_text}
 
         // スケジュール管理
         // 状態による振り分けは中でやる
-        STATE_LOG(`*** ${aid} => ${emily_state.getState(aid)} ***`)
         if(scheduleManager(msg) == true) {
             // スケジュール管理中のときは残りの処理はやらない
             return;
@@ -791,15 +795,7 @@ ${msg_text}
             } else {
                 sendMsg(ch_id, ":blush: …しかけにんしゃま…？\n:thinking: はっ、す、すみません！居眠りだなんてはしたない…！");
             }
-        } else if(textFind(msg.content, 'やあ')) {
-            let name = user_note[aid].nickname;
-            if(name == null) {
-                res_msg = ":smile: あっ、仕掛け人さま♪";
-            } else {
-                res_msg = ":smile: あっ、%nickname%♪";
-            }
-            sendMsg(ch_id, res_msg, aid);
-
+            
         } else if(textFind(msg.content, '<.*>.*ID.*教えて')) {
             id = msg.content.match(/<(.*)>/);
             res_msg = `:slightly: ${id[1]} だそうですよ。お役に立てましたか？`;
@@ -810,6 +806,7 @@ ${msg_text}
                 // 低確率でコマンドに一致しない「エミリー」に反応する
                 if(rand < 30 || msg.content == 'エミリー') {
                     sendMsgWithTyping(ch_id, ":slightly: お呼びでしょうか、%nickname%。", 500, aid);
+                    emily_state.setState(STATE.WAIT_CALL, aid);
                }
             }
         }
