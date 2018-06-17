@@ -3,5 +3,7 @@ services:
     emily_bot:
         build: ./
         container_name: emily
+        volumes:
+            - ./UserNote:/emily/UserNote
         restart: always
 
