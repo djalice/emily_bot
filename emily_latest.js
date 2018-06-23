@@ -11,6 +11,8 @@ const fs = require('fs');
 const readFileAsync = promisify(fs.readFile);
 
 
+const ADMIN_ROLE_NAME = "Admin";
+
 /////////////////////////////////////////////////////////////////////////////////////
 // ログ出力用
 const LOG_SERVER_ID = "426959115517165579";     // ログサーバー
@@ -554,8 +556,6 @@ var user_note = new Array();
 
 
 const MY_ID = "427105620957593621";             // 自分のID
-const ID_ALICE = '327384188611198978';
-const ID_ARLE = '227774872665718785';
 const ID_SANDBOX = '427112710816268299';
 
 // いわゆるプレフィックス
@@ -787,9 +787,9 @@ ${msg_text}
 		} else if(textFind(msg.content, '(ボーカル|歌詞)レッスン')) {
 			sendMsg(ch_id, VOCAL_LESSON_MSG, aid);
 		
-		} else if(textFind(msg.content, '(ね|寝|眠っ)てい*る.*？')) {
+		} else if(textFind(msg.content, '(ね|寝|眠っ)て*る.*？')) {
 			sendMsg(ch_id, ":sleeping: すぅ…すぅ…");
-			if(msg.author.id == ID_ALICE) {
+			if(hasRole(msg.member, ADMIN_ROLE_NAME)) {
 				reloadMessageFile();
 				sendMsg(ch_id, ":blush: …しかけにんしゃま…？\n:smile: …夢を、見ていました。私は戦う巫女で、このみさんは油売りで、杏奈さんはくのいちで…みんなで、仕掛け人さまをお助けするんです。");
 			} else {
@@ -812,8 +812,8 @@ ${msg_text}
 		}
 	}
 } catch(e) {
-	FUNCTION_LOG(e);
-	sendMsg(ch_id, "す、すみません…ちょっと具合が…");
+	STATE_LOG(e);
+	sendMsg(msg.channel.id, "す、すみません…ちょっと具合が…");
 	bot.disconnect();
 } finally {
 }
@@ -1403,21 +1403,30 @@ function reloadMessageFile()
 
 function command(call_msg)
 {
-	let id = call_msg.author.id;
+	FUNCTION_LOG("command()");
+	let member = call_msg.member;
 	let msg = call_msg.content;
 
-	if(msg == "$state sleepin" && id == ID_ALICE) {
-		emily_state.sleepIn(call_msg.channel.id);
-	} else if(msg == "$state sleepout" && id == ID_ALICE) {
-		emily_state.sleepOut(call_msg.channel.id);
-	} else if(msg == "$state reset" && id == ID_ALICE) {
-		emily_state.reset();
-	} else if(msg == "$schedule alert" && id == ID_ALICE) {
-		cron.setPer1hour();
-	} else if(msg == "$schedule cron reset" && id == ID_ALICE) {
-		cron.initPer1hour();
-	} else if(msg == "$delete present" && id == ID_ALICE) {
-		deletePresent();
+	let help_msg = `$state [sleepin sleepout reset]
+$cron [force reset]
+$delete present`;
+	
+	if(hasRole(member, ADMIN_ROLE_NAME)) {
+		if(msg == "$state sleepin") {
+			emily_state.sleepIn(call_msg.channel.id);
+		} else if(msg == "$state sleepout") {
+			emily_state.sleepOut(call_msg.channel.id);
+		} else if(msg == "$state reset") {
+			emily_state.reset();
+		} else if(msg == "$cron force") {
+			cron.setPer1hour();
+		} else if(msg == "$cron reset") {
+			cron.initPer1hour();
+		} else if(msg == "$delete present") {
+			deletePresent();
+		} else if(msg == "$help") {
+			bot.createMessage(call_msg.channel.id, help_msg);
+		}
 	}
 }
 
@@ -1626,6 +1635,37 @@ function isAffectionOverPeriod(aid)
 		return false;
 	}
 }
+
+
+/**
+ * 役職を持っているかチェック
+ * @param {Member} member 
+ * @param {String} role_name 
+ */
+function hasRole(member, role_name)
+{
+	FUNCTION_LOG("hasRole()");
+	// サーバーの役職からrole_nameを見つけて取得
+	let role = member.guild.roles.find(function(item){
+		return item.name == role_name;
+	});
+
+	// 役職が見つからない
+	if(role == undefined) {
+		return false;
+	}
+
+	// memberが役職を持っているかチェック
+	for(r of member.roles) {
+		if(r == role.id) {
+			STATE_LOG(`${member.user.username} has "${role_name}"`);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 // 何も定義されていないときのデフォルト返答処理
