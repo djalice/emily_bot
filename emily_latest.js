@@ -2,6 +2,7 @@ require('dotenv').config();
 const Eris = require("eris");
 const PrivateChannel = require("eris/lib/structures/PrivateChannel");
 const Role = require("eris/lib/structures/Role");
+const Log = require("./Log.js");
 var bot = new Eris(process.env.BOT_KEY);
 
 // TOML読み込み関連
@@ -15,16 +16,9 @@ const ADMIN_ROLE_NAME = "Admin";
 
 /////////////////////////////////////////////////////////////////////////////////////
 // ログ出力用
-const LOG_SERVER_ID = "426959115517165579";     // ログサーバー
-const LOG_CHID = "427341810680070146";          // ログチャンネル
 const LOGGING_LEVEL = 3;    // Lvが高いほど詳細なログ
 const IS_FUNCTION_LOG = false;
 const IS_PARAM_LOG = true;
-const IS_STATE_LOG = true;
-
-function STATE_LOG(t, lv=1) {
-	if(IS_STATE_LOG && lv<=LOGGING_LEVEL) console.log("[s]" + t);
-}
 
 function FUNCTION_LOG(t, lv=2) {
 	if(IS_FUNCTION_LOG && lv<=LOGGING_LEVEL) console.log("[f]" + t);
@@ -114,9 +108,9 @@ class ResponseMessage
 		if(typeof func_list[this.func]!=="undefined"){
 			func_list[this.func](call_msg, this);
 			user_note[call_msg.author.id].addAffection(this.affection);
-			STATE_LOG(this.func + "() fired");
+			Log.state(this.func + "() fired", true);
 		} else {
-			STATE_LOG("func none");
+			Log.state("func none");
 		}
 		FUNCTION_LOG("funcFire() end");
 	}
@@ -156,7 +150,7 @@ class MusicLib {
 		for(music of this.lib) {
 			let regexp = new RegExp(music.title, 'g');
 			if(regexp.test(title)) {
-				STATE_LOG(music.title + " find");
+				Log.state(music.title + " find");
 				return music;
 			}
 		}
@@ -311,11 +305,11 @@ class EmilyState
 	setState(s, aid=null) {
 		if(aid != null) {
 			this.personal_state[aid] = s;
-			STATE_LOG(`setState(${s}, ${aid})`);
+			Log.state(`状態を設定しました(${s}, ${aid})`, true);
 		} else {
 			this.prev_state = this._state;
 			this.state = s;
-			STATE_LOG(`setState(${s})`);
+			Log.state(`状態を設定しました(${s})`, true);
 		}
 	}
 
@@ -339,12 +333,9 @@ class EmilyState
 	// ひとり遊びを始めるまでのタイマー作動
 	setPlayAloneTimer() {
 		if(this.play_alone_timer != null) {
-			STATE_LOG("***clearTimeout***");
 			clearTimeout(this.play_alone_timer);
 		}
 
-		STATE_LOG("***setTimeout***");
-		//let msec = random(3, 5) * 3600000;
 		let msec = 3600000 * 2;
 		if(random(0,100) < 50) {
 			return;
@@ -371,7 +362,7 @@ class EmilyState
 	// ユーザー個別のエミリーの状態をキャンセルするタイマー作動
 	stateCancelTimer(aid, sec=30000) {
 		this.state_cancel_timer[aid] = setTimeout(function(){
-			STATE_LOG("*** State Cancel ***");
+			Log.state("*** State Cancel ***", true);
 			this.personal_state[aid] = STATE.NEUTRAL;
 		}, sec);
 	}
@@ -431,17 +422,16 @@ class Cron
 		future = moment(future_arr);
 
 		let msec = future.diff(now);
-		STATE_LOG(now.format("HH:mm:ss"));
-		STATE_LOG(future.format("HH:mm:ss"));
-		PARAM_LOG(msec);
+		Log.state(now.format("HH:mm:ss"), true);
+		Log.state(future.format("HH:mm:ss"), true);
+		Log.state(msec, true);
 		setTimeout(this.setPer10min, msec);
 	}
 
 	setPer10min() {
 		this.per10min = function() {
 			let time = moment().format("HH:mm:ss");
-			STATE_LOG("per10min[" + time + "]");
-			sendMsg(LOG_CHID, "[" + time + "]毎時10分の動作テストです");
+			Log.state("per10min[" + time + "]", true);
 		}
 
 		this.per10min();
@@ -461,16 +451,15 @@ class Cron
 		future = moment(future_arr);
 
 		let msec = future.diff(now);
-		STATE_LOG(now.format("HH:mm:ss"));
-		STATE_LOG(future.format("HH:mm:ss"));
-		PARAM_LOG(msec);
+		Log.state("現在時刻:" + now.format("HH:mm:ss"), true);
+		Log.state("次の同期時刻:" + future.format("HH:mm:ss"), true);
 		setTimeout(this.setPer1hour, msec);
 	}
 
 	setPer1hour() {
 		this.per1hour = function() {
 			let time = moment().format("HH:mm:ss");
-			STATE_LOG("per1hour[" + time + "]");
+			Log.state("現在時刻[" + time + "]", true);
 			
 			let h = moment().hour();
 			switch(h) {
@@ -480,7 +469,7 @@ class Cron
 				case 2:
 					emily_state.sleepIn();
 					break;
-				case 4:
+				case 5:
 					emily_state.sleepOut();
 					emily_state.setPlayAloneTimer();
 					break;
@@ -516,7 +505,7 @@ function calender()
 		'06/03' : "@everyone\n:smile: みなさま、昨日は本当にありがとうございました！\n:blush: 普段あまり歌わないような楽曲を歌わせていただきましたが、いかがでしたでしょうか…？\n:smile: さて、今日は公演2日目です！最後まで楽しんでくださいね！"
 	};
 	let today = moment().format("MM/DD");
-	STATE_LOG("today:"+today);
+	Log.state("today:"+today);
 	if(typeof calender[today] !== 'undefined') {
 		let content = new Object();
 		content.content = calender[today];
@@ -537,7 +526,7 @@ function deletePresent()
 					&& (user_note[member.id].present_limit != null) // プレゼントの期限が設定されている
 					&& (user_note[member.id].present_limit.format("YYYYMMDD") == moment().format("YYYYMMDD")) // 今日が期限の日
 				) {
-						STATE_LOG("member.id:"+member.id);
+						Log.state("member.id:"+member.id);
 						member.removeRole('450320539647737856').then(obj => {
 						user_note[member.id].present_limit = null;
 						user_note[member.id].writeToml();
@@ -609,6 +598,9 @@ var cron = new Cron();
 // bot起動
 bot.on("ready", () => {
 	FUNCTION_LOG("Are you ready!! I'm lady!!", 0);
+	Log.setBot(bot);
+	Log.setLogChannel(process.env.LOG_CHANNEL);
+
 	// はじめよう　やればできる
 	reloadMessageFile();
 	emily_state.setPlayAloneTimer();
@@ -626,8 +618,11 @@ bot.on("ready", () => {
 		var game = new Object();
 		game.name = place[i];
 		bot.editStatus("online", game);
-		STATE_LOG("Status change->" + place[i]);
+		Log.state("Status change->" + place[i]);
 	}, 600000);
+
+	Log.state("起動しました", true);
+	Log.sendLog();
 });
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -670,17 +665,12 @@ try{
 		return;
 	}
 
-	if (ch_id == '431036008574877698') {
-		STATE_LOG("ignore channel");
-		return;
-	}
-
 	// ここから下はエミリーの見える範囲で誰かが喋っている
 	emily_state.setPlayAloneTimer();
 
 	// DMを投げたときの反応
 	if(!msg.author.bot && (msg.channel.constructor === PrivateChannel)) {
-		STATE_LOG("id=" + msg.author.id);
+		Log.state("private channel id=" + msg.author.id, true);
 		ch_id = msg.author; // sendMsgを流用するため、情報を置き換える
 		is_force_call = true;
 	}
@@ -745,9 +735,9 @@ ${msg_text}
 		let res_msg;
 
 		// UserNoteがまだ作られていなかったら作成する
-		STATE_LOG("user_note="+user_note[aid]);
+		Log.state("user_note="+user_note[aid]);
 		if(user_note[aid] == undefined) {
-			STATE_LOG("New UserNote create");
+			Log.state("New UserNote create");
 			user_note[aid] = new UserNote(aid);
 			user_note[aid].writeToml();
 		}
@@ -812,7 +802,7 @@ ${msg_text}
 		}
 	}
 } catch(e) {
-	STATE_LOG(e);
+	Log.state(e, true);
 	sendMsg(msg.channel.id, "す、すみません…ちょっと具合が…");
 	bot.disconnect();
 } finally {
@@ -994,10 +984,8 @@ function randomResponse(call_msg, callMap)
 			PARAM_LOG(index);
 			let resMap = responseFilterMessageType(call_msg, callMap[index]);
 			res = randomResponsePick(resMap);
-			STATE_LOG("match");
 			break;
 		} else {
-			STATE_LOG("unmatch", 5);
 		}
 	}
 	FUNCTION_LOG("randomResponse() end");
@@ -1047,7 +1035,7 @@ function randomResponsePick(resMap)
 			totalProbability += prob;
 		} else {
 			// コールだけ登録されててレスポンスがないときは即戻る
-			STATE_LOG("response none", 4);
+			Log.state("response none");
 			FUNCTION_LOG("randomResponsePick() end");
 			return null;
 		}
@@ -1065,7 +1053,7 @@ function randomResponsePick(resMap)
 		}
 	}
 
-	STATE_LOG("response none");
+	Log.state("response none");
 	FUNCTION_LOG("randomResponsePick() end");
 	return null;
 }
@@ -1582,18 +1570,18 @@ function scheduleCrawl(user_notes)
 			if(Number(s[i]['month']) == m && Number(s[i]['day']) == d && Number(s[i]['hour']) == h) {
 				s[i]['aid'] = aid;
 				s[i]['index'] = i;
-				STATE_LOG(`${aid} schedule push`);
+				Log.state(`${aid} schedule push`);
 				list.push(s[i]);
 			}
 		}
 	}
 
 	if(list.length == 0) {
-		FUNCTION_LOG("scheduleCrawl() end *list empty*");
+		Log.state("scheduleCrawl() end *list empty*");
 		return null;
 	} else {
 		PARAM_LOG(list);
-		FUNCTION_LOG("scheduleCrawl() end");
+		Log.state("登録された予定が見つかったので通知", true);
 		return list;
 	}
 }
@@ -1613,7 +1601,7 @@ function scheduleAlert(s_list)
 		let aid = s['aid'];
 		let msg = `:smile: %mention% お時間になりました～！ええと…\`\`\`\n${m}/${d} ${h}:00\n${note}\n\`\`\`:smile: ですっ♪ %nickname% 、お役にたてましたか？`;
 		sendMsg(cid, msg, aid);
-		STATE_LOG(`[${aid}] id:${id} schedule alerted`);
+		Log.state(`[${aid}] id:${id} 予定を通知`, true);
 		user_note[aid].deleteSchedule(id);
 	}
 	FUNCTION_LOG("scheduleAlert() end");
@@ -1627,9 +1615,10 @@ function scheduleAlert(s_list)
 function isAffectionOverPeriod(aid)
 {
 	FUNCTION_LOG("isAffectionOverPeriod() start");
-	STATE_LOG("affection:" + user_note[aid].affection);
-	STATE_LOG("period:" + user_note[aid].affection_period);
+	Log.state("affection:" + user_note[aid].affection);
+	Log.state("period:" + user_note[aid].affection_period);
 	if(user_note[aid].affection >= user_note[aid].affection_period) {
+		Log.state(`${aid}の親愛度が${user_note[aid].affection_period}に到達しました`, true);
 		return true;
 	} else {
 		return false;
@@ -1658,7 +1647,7 @@ function hasRole(member, role_name)
 	// memberが役職を持っているかチェック
 	for(r of member.roles) {
 		if(r == role.id) {
-			STATE_LOG(`${member.user.username} has "${role_name}"`);
+			Log.state(`${member.user.username} has "${role_name}"`);
 			return true;
 		}
 	}
@@ -1729,7 +1718,6 @@ function resWhereIdol(call_msg, res)
 		PARAM_LOG(idol);
 		if (textFind(call_msg.content, idol)) {
 			result = randomResponsePick(where_idol_res_msg[idol]);
-			STATE_LOG("match");
 			break;
 		}
 	}
@@ -1812,13 +1800,14 @@ function resSingPlease(call_msg, res, is_humming=false)
 
 	if(emily_state.getState() == STATE.SINGING) {
 		sendMsg(ch_id, ":thinking: す、すみません…！少しお待ちいただけますでしょうか…！");
-		STATE_LOG("state singing");
+		Log.state("state singing");
 		return;
 	}
 
 	if(music == null) {
 		let aid = call_msg.author.id;
 		res_msg = ":blush: すみません…その曲についてはよく知らなくて…よろしければ、%nickname%が教えてくださいませんか？";
+		Log.state(`「${search_title}」を要求されましたが歌えませんでした`, true);
 		sendMsgWithTyping(ch_id, res_msg, 500, aid);
 		return;
 	} else {
@@ -1869,7 +1858,7 @@ function resSingPlease(call_msg, res, is_humming=false)
 	}`;
 	script += "],() => {});";
 
-	STATE_LOG(script);
+	Log.state(script);
 
 	if(!is_humming) {
 		first_phrase = replaceVariant(first_phrase, call_msg.author.id);
@@ -1929,7 +1918,7 @@ function resSetTimer(call_msg, res)
 	let ch_id = getChannelID(call_msg);
 	let msec = min * 60 * 1000;
 	sendMsg(ch_id, ":slightly: わかりました。では" + min + "分経ったら教えますね");
-	STATE_LOG("set timer after " + msec);
+	Log.state("set timer after " + msec);
 
 	setTimeout(function () {
 		let aid = call_msg.author.id;
