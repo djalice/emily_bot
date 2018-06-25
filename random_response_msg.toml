@@ -194,3 +194,15 @@
 "役職の一覧を見せて" = [
 	{ res = "テストです", prob = 1, func="resShowRoles" }
 ]
+
+"^みんなに(伝えて|お知らせして)" = [
+	{ res = "func側で処理", prob = 1, func = "resSetAnnounce" }
+]
+
+"^お知らせを消して" = [
+	{ res = "func側で処理", prob = 1, func = "resDeleteAnnounce" }
+]
+
+"^お知らせを見せて" = [
+	{ res = "func側で処理", prob = 1, func = "resShowAnnounce" }
+]
