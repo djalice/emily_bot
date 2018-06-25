@@ -43,6 +43,9 @@ const func_list = {
 	"resSetNickName" : resSetNickname,
 	"resSetTimer" : resSetTimer,
 	"resShowRoles" : resShowRoles,
+	"resSetAnnounce" : resSetAnnounce,
+	"resDeleteAnnounce" : resDeleteAnnounce,
+	"resShowAnnounce" : resShowAnnounce
 };
 /////////////////////////////////////////////////////////////////////////////////////
 class ResponseMessage
@@ -108,7 +111,7 @@ class ResponseMessage
 		if(typeof func_list[this.func]!=="undefined"){
 			func_list[this.func](call_msg, this);
 			user_note[call_msg.author.id].addAffection(this.affection);
-			Log.state(this.func + "() fired", true);
+			Log.state(this.func + "() fired");
 		} else {
 			Log.state("func none");
 		}
@@ -459,7 +462,7 @@ class Cron
 	setPer1hour() {
 		this.per1hour = function() {
 			let time = moment().format("HH:mm:ss");
-			Log.state("現在時刻[" + time + "]", true);
+			Log.state("現在時刻[" + time + "]");
 			
 			let h = moment().hour();
 			switch(h) {
@@ -488,6 +491,17 @@ class Cron
 			let s_list = scheduleCrawl(user_note);
 			if(s_list != null) {
 				scheduleAlert(s_list);
+			}
+
+			let hash = moment().format("MDH");
+			if(announce[hash] != undefined) {
+				let content = new Object();
+				content.content = "@everyone\n" + announce[hash];
+				content.disableEveryone = false;
+				content.content = replaceEmoji(content.content);  // 絵文字変換
+				bot.createMessage("427039750181093386", content);
+				Log.state(`ハッシュ[${hash}]のお知らせをしました`, true);
+				delete announce[hash];
 			}
 		} // ↑ここに1時間ごとの処理を入れる
 
@@ -1936,5 +1950,70 @@ function resShowRoles(call_msg, res)
 	sendMsg(call_msg.channel.id, list);
 }
 
+var announce = new Array();
+function resSetAnnounce(msg)
+{
+	if(hasRole(msg.member, "Admin") == false) {
+		return;
+	}
+
+	let data = msg.content.match(/.+\n(\d+)\/(\d+) (\d+):00\n([\S\s]*)/);
+	let month, day, hour;
+	let announce_msg;
+
+	if(data != null) {
+		month = data[1], day = data[2], hour = data[3];
+		announce_msg = data[4];
+	} else {
+		sendMsg(msg.channel.id, "登録できませんでした…。");
+		return;
+	}
+
+	let check_msg = "この内容でお知らせを登録しました。\n" +
+					`${month}/${day} ${hour}:00` +
+					"```" +
+					announce_msg +
+					"```";
+	let hash = month + day + hour;
+
+	announce[hash] = announce_msg;
+	sendMsg(msg.channel.id, check_msg);
+	Log.state(`set announce hash[${hash}]`, true);
+}
+
+function resDeleteAnnounce(msg)
+{
+	let d = msg.content.match(/\[(\d+)]/);
+	let hash;
+	if(d == null) {
+		sendMsg(msg.channel.id, "削除できませんでした…。");
+		return;
+	}
+	console.dir(d);
+	hash = d[1];
+	if(announce[hash] != undefined) {
+		delete announce[hash];
+		sendMsg(msg.channel.id, `hash[${hash}] のお知らせを削除しました。`);
+		Log.state(`delete announce hash[${hash}`, true);
+	} else {
+		sendMsg(msg.channel.id, "削除できませんでした…。");
+		return;
+	}
+}
+
+function resShowAnnounce(msg)
+{
+	let list = "";
+	for(hash in announce) {
+		let prev = announce[hash].match(/^\S*/);
+		list += `[${hash}] ${prev}～\n`;
+	}
+
+	if(list != "") {
+		sendMsg(msg.channel.id, `お知らせの一覧です。\n${list}`);
+	} else {
+		sendMsg(msg.channel.id, "今、みなさまにお知らせする事項はないようです。");
+	}
+}
 // ↑↑↑ここに固有処理を追加していく
 /////////////////////////////////////////////////////////////////////////////////////
