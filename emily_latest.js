@@ -693,29 +693,6 @@ try{
 		ch_id = msg.author; // sendMsgを流用するため、情報を置き換える
 		is_force_call = true;
 	}
-/*
-	if(!msg.author.bot && (msg.channel.constructor === PrivateChannel)) {
-	//if(!msg.author.bot && (msg.channel.constructor === PrivateChannel)
-	//    && (msg.author.id == ID_ALICE || msg.author.id == ID_ARLE)) {
-		ch_id = '431036008574877698';
-		msg_text = `:slightly: お手紙が届きました。
-\`\`\`
-${msg_text}
-\`\`\``;
-		STATE_LOG("private channel");
-		PARAM_LOG("----------");
-		STATE_LOG("id=" + msg.author.id);
-		STATE_LOG("msg=" + msg_text);
-		//PARAM_LOG(msg);
-		PARAM_LOG("----------");
-		let content = new Object();
-		content.content = msg_text;
-		content.disableEveryone = false;
-		content.content = replaceEmoji(content.content);  // 絵文字変換
-		bot.createMessage(ch_id, content);
-		return;
-	}
-*/
 	
 	if(!msg.author.bot && (
 		!is_call && (rand<50)               // ときどき反応する
@@ -1958,7 +1935,7 @@ function resShowRoles(call_msg, res)
 var announce = new Array();
 function resSetAnnounce(msg)
 {
-	if(hasRole(msg.member, "Admin") == false) {
+	if(hasRole(msg.member, ADMIN_ROLE_NAME) == false) {
 		return;
 	}
 
@@ -1992,7 +1969,7 @@ function resSetAnnounce(msg)
 
 function resDeleteAnnounce(msg)
 {
-	if(hasRole(msg.member, "Admin") == false) {
+	if(hasRole(msg.member, ADMIN_ROLE_NAME) == false) {
 		return;
 	}
 
@@ -2015,7 +1992,7 @@ function resDeleteAnnounce(msg)
 
 function resShowAnnounce(msg)
 {
-	if(hasRole(msg.member, "Admin") == false) {
+	if(hasRole(msg.member, ADMIN_ROLE_NAME) == false) {
 		return;
 	}
 
