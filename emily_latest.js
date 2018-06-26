@@ -488,20 +488,23 @@ class Cron
 					break;
 			}
 
+			// 毎時スケジュールをクロールして、該当するものがあれば通知する
 			let s_list = scheduleCrawl(user_note);
 			if(s_list != null) {
 				scheduleAlert(s_list);
 			}
 
+			// 毎時お知らせをチェックして、あれば通知する
 			let hash = moment().format("MDH");
 			if(announce[hash] != undefined) {
 				let content = new Object();
-				content.content = "@everyone\n" + announce[hash];
+				content.content = "@everyone\n" + "```" + announce[hash] + "```";
 				content.disableEveryone = false;
 				content.content = replaceEmoji(content.content);  // 絵文字変換
-				bot.createMessage("427039750181093386", content);
+				bot.createMessage(process.env.ANNOUNCE_CHANNEL, content);
 				Log.state(`ハッシュ[${hash}]のお知らせをしました`, true);
 				delete announce[hash];
+
 			}
 		} // ↑ここに1時間ごとの処理を入れる
 
@@ -634,6 +637,8 @@ bot.on("ready", () => {
 		bot.editStatus("online", game);
 		Log.state("Status change->" + place[i]);
 	}, 600000);
+
+	readAnnounce(); // お知らせ読み込み
 
 	Log.state("起動しました", true);
 	Log.sendLog();
@@ -1977,24 +1982,31 @@ function resSetAnnounce(msg)
 	let hash = month + day + hour;
 
 	announce[hash] = announce_msg;
+	if(!fs.existsSync("./Announce")) {
+		fs.mkdirSync("./Announce");
+	}
+	fs.writeFileSync("./Announce/" + hash + ".txt", announce_msg);
 	sendMsg(msg.channel.id, check_msg);
 	Log.state(`set announce hash[${hash}]`, true);
 }
 
 function resDeleteAnnounce(msg)
 {
+	if(hasRole(msg.member, "Admin") == false) {
+		return;
+	}
+
 	let d = msg.content.match(/\[(\d+)]/);
 	let hash;
 	if(d == null) {
 		sendMsg(msg.channel.id, "削除できませんでした…。");
 		return;
 	}
-	console.dir(d);
+
 	hash = d[1];
-	if(announce[hash] != undefined) {
-		delete announce[hash];
+	if(deleteAnnounce(hash) == true) {
 		sendMsg(msg.channel.id, `hash[${hash}] のお知らせを削除しました。`);
-		Log.state(`delete announce hash[${hash}`, true);
+		Log.error(`delete announce hash[${hash}`);
 	} else {
 		sendMsg(msg.channel.id, "削除できませんでした…。");
 		return;
@@ -2003,6 +2015,10 @@ function resDeleteAnnounce(msg)
 
 function resShowAnnounce(msg)
 {
+	if(hasRole(msg.member, "Admin") == false) {
+		return;
+	}
+
 	let list = "";
 	for(hash in announce) {
 		let prev = announce[hash].match(/^\S*/);
@@ -2015,5 +2031,45 @@ function resShowAnnounce(msg)
 		sendMsg(msg.channel.id, "今、みなさまにお知らせする事項はないようです。");
 	}
 }
+
+function readAnnounce()
+{
+	let dir = "./Announce/";
+	fs.readdir(dir, function(err, files){
+		if(err) {
+			return;
+		}
+		// ディレクトリ内のファイル毎に対して
+		for(let file of files) {
+			let path = dir + file;
+			readFileAsync(path, 'utf-8')
+			.then(obj => {
+				let hash = file.split(".")[0];
+				announce[hash] = obj;
+			}).catch(err => {
+				PARAM_LOG(err, 0);
+			});
+		}
+	})
+}
+
+function deleteAnnounce(hash)
+{
+	if(announce[hash] != undefined) {
+		delete announce[hash];
+		fs.unlink(`./Announce/${hash}.txt`, function(err){
+			if(err) {
+				Log.error("unlink fail.");
+				return false;
+			}
+		});
+	} else {
+		Log.error(`${hash} undefined`);
+		return false;
+	}
+
+	return true;
+}
+
 // ↑↑↑ここに固有処理を追加していく
 /////////////////////////////////////////////////////////////////////////////////////
