@@ -42,6 +42,15 @@ Log.param = function(obj, toDiscord=false) {
 	}
 }
 
+Log.error = function(t, toDiscord=true) {
+	const p = "[e]";
+	let date = "[" + moment().format("HH:mm:ss") + "]";
+	console.error(date + p + t);
+	if(toDiscord == true) {
+		poolLog(date + p + t);
+	}
+}
+
 // ログをためる
 var poolLog = function(log) {
 	pool += log + "\n";
