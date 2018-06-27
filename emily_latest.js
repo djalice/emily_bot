@@ -63,14 +63,17 @@ class ResponseMessage
 			this.msg = data['res'];
 			this.prob = data['prob'];
 
+			// 未使用
 			if (typeof data['state']!== "undefined") {
 				this.state = data['state'];
 			}
 
+			// 未使用
 			if (typeof data['prev_state']!== "undefined") {
 				this.prev_state = data['prev_state'];
 			}
 
+			// 固有関数の設定
 			if (typeof data['func']!== "undefined") {
 				this.func = data['func'];
 				PARAM_LOG(this.func, 5);
@@ -78,22 +81,32 @@ class ResponseMessage
 				this.func = "defaultSendMsg";
 			}
 
+			// 親愛度上昇値の設定
 			if (typeof data['affection'] !== "undefined") {
 				this.affection = Number(data['affection']);
 			} else {
 				this.affection = 1;
 			}
 
+			// チャンネルフィルタ
 			if (typeof data['public'] !== "undefined") {
 				this.public = Boolean(data['public']);
 			} else {
 				this.public = true;
 			}
 
+			// チャンネルフィルタ
 			if (typeof data['private'] !== "undefined") {
 				this.private = Boolean(data['private']);
 			} else {
 				this.private = true;
+			}
+
+			// 親愛度フィルタ
+			if (typeof data['floor'] !== "undefined") {
+				this.floor = Number(data['floor']);
+			} else {
+				this.floor = 0;
 			}
 
 			FUNCTION_LOG("ResponseMessage constructor() end", 10);
@@ -979,6 +992,7 @@ function randomResponse(call_msg, callMap)
 		if(is_include) {
 			PARAM_LOG(index);
 			let resMap = responseFilterMessageType(call_msg, callMap[index]);
+			resMap = responseFilterAffection(resMap, user_note[call_msg.author.id]);
 			res = randomResponsePick(resMap);
 			break;
 		} else {
@@ -1011,6 +1025,25 @@ function responseFilterMessageType(msg, resMap)
 	}
 	return result;
 }
+
+/**
+ * 親愛度でフィルターをかける
+ * @param {Message} msg 
+ * @param {ResponseMessage[]} resMap 
+ * @param {UserNote} user_note 
+ */
+function responseFilterAffection(resMap, user_note)
+{
+	let result = new Array();
+	for(let res of resMap) {
+		if(res.floor <= user_note.affection) {
+			result.push(res)
+		}
+	}
+
+	return result;
+}
+
 /******************************************************************************
  * 設定されている確率でランダムに返答を選択する
  * @param {ResponseMessage[]} resMap 
