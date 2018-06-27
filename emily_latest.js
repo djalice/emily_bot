@@ -521,8 +521,10 @@ class Cron
 			}
 		} // ↑ここに1時間ごとの処理を入れる
 
-		this.per1hour();
-		this.per1hour_timer = setInterval(this.per1hour, 60*60*1000);
+		if(this.per1hour_timer == null) {
+			this.per1hour();
+			this.per1hour_timer = setInterval(this.per1hour, 60*60*1000);
+		}
 	}
 
 }
