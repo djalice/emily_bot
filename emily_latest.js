@@ -521,10 +521,8 @@ class Cron
 			}
 		} // ↑ここに1時間ごとの処理を入れる
 
-		if(this.per1hour_timer == null) {
-			this.per1hour();
-			this.per1hour_timer = setInterval(this.per1hour, 60*60*1000);
-		}
+		this.per1hour();
+		this.per1hour_timer = setInterval(this.per1hour, 60*60*1000);
 	}
 
 }
@@ -626,37 +624,45 @@ var music_lib = new MusicLib();
 var sleep_msg = new Array();
 
 var cron = new Cron();
+
+var already = false; // 起動後readyの抑制用
 /////////////////////////////////////////////////////////////////////////////////////
 // bot起動
 bot.on("ready", () => {
 	FUNCTION_LOG("Are you ready!! I'm lady!!", 0);
-	Log.setBot(bot);
-	Log.setLogChannel(process.env.LOG_CHANNEL);
 
-	// はじめよう　やればできる
-	reloadMessageFile();
-	emily_state.setPlayAloneTimer();
-	cron.initPer1hour();
-	
-	var timer = setInterval(function(){
-		let place = [
-			"控え室　　　　　　　　　　　　　　　　",
-			"事務室　　　　　　　　　　　　　　　　",
-			"レッスン室　　　　　　　　　　　　　　",
-			"ドレスアップルーム　　　　　　　　　　",
-			"エントランス　　　　　　　　　　　　　"
-		];
-		let i = random(0, 4);
-		var game = new Object();
-		game.name = place[i];
-		bot.editStatus("online", game);
-		Log.state("Status change->" + place[i]);
-	}, 600000);
+	if(already == false) {
+		Log.setBot(bot);
+		Log.setLogChannel(process.env.LOG_CHANNEL);
 
-	readAnnounce(); // お知らせ読み込み
+		// はじめよう　やればできる
+		reloadMessageFile();
+		emily_state.setPlayAloneTimer();
+		cron.initPer1hour();
+		
+		var timer = setInterval(function(){
+			let place = [
+				"控え室　　　　　　　　　　　　　　　　",
+				"事務室　　　　　　　　　　　　　　　　",
+				"レッスン室　　　　　　　　　　　　　　",
+				"ドレスアップルーム　　　　　　　　　　",
+				"エントランス　　　　　　　　　　　　　"
+			];
+			let i = random(0, 4);
+			var game = new Object();
+			game.name = place[i];
+			bot.editStatus("online", game);
+			Log.state("Status change->" + place[i]);
+		}, 600000);
 
-	Log.state("起動しました", true);
-	Log.sendLog();
+		readAnnounce(); // お知らせ読み込み
+		already = true;
+
+		Log.state("起動しました", true);
+		Log.sendLog();
+	} else {
+		Log.state("起動後のreadyを検知しました。抑制します。", true);
+	}
 });
 
 /////////////////////////////////////////////////////////////////////////////////////
