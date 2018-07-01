@@ -103,10 +103,16 @@ class ResponseMessage
 			}
 
 			// 親愛度フィルタ
-			if (typeof data['floor'] !== "undefined") {
-				this.floor = Number(data['floor']);
+			if (typeof data['lock_affection'] !== "undefined") {
+				this.lock_affection = Number(data['lock_affection']);
 			} else {
-				this.floor = 0;
+				this.lock_affection = undefined;
+			}
+
+			if (typeof data['unlock_affection'] !== "undefined") {
+				this.unlock_affection = Number(data['unlock_affection']);
+			} else {
+				this.unlock_affection = undefined;
 			}
 
 			FUNCTION_LOG("ResponseMessage constructor() end", 10);
@@ -962,7 +968,13 @@ function replaceVariant(text, id)
 	}
 	if(text.match(/%sleep_nick%/g) != null) {
 		// 寝言
-		sleep_nick = nick[0] + "……" + nick[nick.length-2] + nick[nick.length-1];
+		if(nick.length == 1) {
+			sleep_nick = nick;
+		} else if(nick.length == 2) {
+			sleep_nick = nick[0] + "……" + nick[1];
+		} else {
+			sleep_nick = nick[0] + "……" + nick[nick.length-2] + nick[nick.length-1];
+		}
 		text = text.replace(/%sleep_nick%/g, sleep_nick);
 	}
 	if(text.match(/%mention%/g) != null) {
@@ -1036,6 +1048,8 @@ function responseFilterMessageType(msg, resMap)
 
 /**
  * 親愛度でフィルターをかける
+ * lock_affection : affection以上になったら除外する
+ * unlock_affection : affection以上になったら開放する
  * @param {Message} msg 
  * @param {ResponseMessage[]} resMap 
  * @param {UserNote} user_note 
@@ -1044,8 +1058,12 @@ function responseFilterAffection(resMap, user_note)
 {
 	let result = new Array();
 	for(let res of resMap) {
-		if(res.floor <= user_note.affection) {
-			result.push(res)
+		if(res.unlock_affection == undefined && res.lock_affection == undefined) {
+			result.push(res);
+		} else if(res.unlock_affection <= user_note.affection) {
+			result.push(res);
+		} else if(res.lock_affection > user_note.affection) {
+			result.push(res);
 		}
 	}
 
