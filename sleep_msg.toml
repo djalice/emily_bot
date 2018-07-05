@@ -7,7 +7,9 @@ sleeping = [
     { res = ":sleeping: ん……%sleep_nick%……", prob = 20 },
     { res = ":sleeping: んん…おいしいれしゅ～…えへへ…♪", prob = 20 },
     { res = ":sleeping: 私の力でお祓いしなくては！……むにゃ…", prob = 20 },
-    { res = ":sleeping: うぅ……いちめんの…眼鏡畑が……", prob = 20 }
+    { res = ":sleeping: うぅ……いちめんの…眼鏡畑が……", prob = 20 },
+    { res = ":sleeping: 抹茶の国の…お姫さまれしゅ……♪", prob = 20 },
+    { res = ":sleeping: ふふ…%nickname%、お主も悪よのう……", prob = 20 }
 ]
 
 sleepout = [
