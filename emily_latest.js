@@ -115,6 +115,12 @@ class ResponseMessage
 				this.unlock_affection = undefined;
 			}
 
+			if (typeof data['counter'] !== "undefined") {
+				this.counter = data['counter'];
+			} else {
+				this.counter = undefined;
+			}
+
 			FUNCTION_LOG("ResponseMessage constructor() end", 10);
 		}
 	}
@@ -488,15 +494,15 @@ class Cron
 				case 0:
 					deletePresent();
 					break;
-				case 2:
+				case 1:
 					emily_state.sleepIn();
 					break;
-				case 5:
+				case 6:
 					emily_state.sleepOut();
 					emily_state.setPlayAloneTimer();
 					break;
 				case 7:
-					calender();
+					//calender();
 					break;
 				case 12:
 				case 15:
