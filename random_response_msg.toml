@@ -54,6 +54,12 @@
 #		オプション
 #		親愛度が数値以上になると抽選対象になる。
 #
+#	sleep=(true | false)
+#		オプション
+#		trueであれば寝ている状態のときのみ抽選対象になる。
+#		デフォルトの寝言と合わせて抽選が行われるので、確率は大きめに設定しておくとよい。
+#		デフォルトはfalse。
+#
 
 "(にらめっこ|笑うと負けよ)" = [
 	{ res = ":daruma: あっぷっぷ！", prob = 1, func="resNiramekko", affection = 2 },
@@ -65,6 +71,12 @@
 	{ res = ":blush: %nickname%に触れられると、不思議と心がやわらぐのは何故なんでしょう…。ひょっとして、頭のツボに秘密があるのでしょうか…？", prob = 30, affection = 3 },
 	{ res = ":blush: %stutter_nick%…は、恥ずかしいでしゅ…", prob = 60, affection = 3 },
 	{ res = ":blush: えへへ…なんだかふわふわした気持ちになります…♪", prob = 30, affection = 3, unlock_affection = 500 },
+	{ res = ":sleeping: んん……ん～……（ごろん", prob = 100, affection = 0, sleep=true },
+	{ res = ":sleeping: んん……くしゅぐったいでしゅ……", prob = 100, affection = 1, sleep=true, unlock_affection = 200 },
+	{ res = ":smile: えへへ……くしゅぐったいでしゅ……♪", prob = 200, affection = 2, sleep=true, unlock_affection = 400 },
+	{ res = ":smile: んん～…♪（すりすり", prob = 200, affection = 3, sleep=true, unlock_affection = 600 },
+    { res = ":sleeping: ん……%sleep_nick%……", prob = 100, sleep=true },
+    { res = ":sleeping: ふふ…%nickname%、お主も悪よのう……", prob = 100, sleep=true }
 ]
 
 "(かわいい|可愛い)" = [

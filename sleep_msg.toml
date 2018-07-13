@@ -3,13 +3,11 @@ sleepin = [
 ]
 
 sleeping = [
-    { res = ":sleeping: すぅ…すぅ…", prob = 20 },
-    { res = ":sleeping: ん……%sleep_nick%……", prob = 20 },
-    { res = ":sleeping: んん…おいしいれしゅ～…えへへ…♪", prob = 20 },
-    { res = ":sleeping: 私の力でお祓いしなくては！……むにゃ…", prob = 20 },
-    { res = ":sleeping: うぅ……いちめんの…眼鏡畑が……", prob = 20 },
-    { res = ":sleeping: 抹茶の国の…お姫さまれしゅ……♪", prob = 20 },
-    { res = ":sleeping: ふふ…%nickname%、お主も悪よのう……", prob = 20 }
+    { res = ":sleeping: すぅ…すぅ…", prob = 10 },
+    { res = ":sleeping: んん…おいしいれしゅ～…えへへ…♪", prob = 10 },
+    { res = ":sleeping: 私の力でお祓いしなくては！……むにゃ…", prob = 10 },
+    { res = ":sleeping: うぅ……いちめんの…眼鏡畑が……", prob = 10 },
+    { res = ":sleeping: 抹茶の国の…お姫さまれしゅ……♪", prob = 10 },
 ]
 
 sleepout = [

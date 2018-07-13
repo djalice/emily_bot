@@ -121,6 +121,12 @@ class ResponseMessage
 				this.counter = undefined;
 			}
 
+			if (typeof data['sleep'] !== "undefined") {
+				this.sleep = Boolean(data['sleep']);
+			} else {
+				this.sleep = false;
+			}
+
 			FUNCTION_LOG("ResponseMessage constructor() end", 10);
 		}
 	}
@@ -378,6 +384,7 @@ class EmilyState
 		this.setState(STATE.SLEEPING);
 		let res = randomResponsePick(sleep_msg['sleepin']);
 		sendMsg(ch_id, res.msg);
+		sendMsgWithTyping(ch_id, ":sleeping: すぅ…すぅ……", 5000);
 	}
 
 	// 眠りから目覚める
@@ -496,6 +503,16 @@ class Cron
 					break;
 				case 1:
 					emily_state.sleepIn();
+					break;
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+					// 1時間ごとに低確率で自発的に寝言
+					if(random(0,100)<10) {
+						let res = randomResponsePick(sleep_msg['sleeping']);
+						sendMsg(ID_SANDBOX, res.msg);
+					}
 					break;
 				case 6:
 					emily_state.sleepOut();
@@ -788,9 +805,8 @@ try{
 
 		} else if((res_msg = randomResponse(msg, random_res_msg)) != null) {
 			if(emily_state.getState() == STATE.SLEEPING) {
-				// 寝てるとき
-				let res = randomResponsePick(sleep_msg['sleeping']);
-				sendMsgWithTyping(ch_id, res.msg, 2000, aid);
+				// 寝てるときはちょっと間をおいて喋る
+				sendMsgWithTyping(ch_id, res_msg.msg, 2000, aid);
 			} else {
 				// ランダム定型文を探して、あれば返答
 				res_msg.funcFire(msg);
@@ -1007,8 +1023,8 @@ function random(min, max)
  */
 function randomResponse(call_msg, callMap)
 {
-	FUNCTION_LOG("randomResponse() start");
-	FUNCTION_LOG("arg->" + call_msg);
+	Log.func("randomResponse() start");
+	Log.func("arg->" + call_msg);
 	let index;
 	let res = null;
 
@@ -1017,24 +1033,42 @@ function randomResponse(call_msg, callMap)
 		let is_include = textFind(call_msg.content, index);
 		if(is_include) {
 			PARAM_LOG(index);
-			let resMap = responseFilterMessageType(call_msg, callMap[index]);
+			let resMap = null;
+			let isSleep = (emily_state.getState() == STATE.SLEEPING);
+
+			resMap = responseFilterSleep(callMap[index], isSleep);
+			resMap = responseFilterMessageType(call_msg, resMap);
 			resMap = responseFilterAffection(resMap, user_note[call_msg.author.id]);
+
+			if(isSleep) {
+				if(resMap == null) {
+					resMap = new Array();
+				}
+				// フィルターをかけた寝言はデフォルトと足してから抽選
+				resMap = resMap.concat(sleep_msg['sleeping']);
+			}
 			res = randomResponsePick(resMap);
 			break;
 		} else {
 		}
 	}
-	FUNCTION_LOG("randomResponse() end");
+	Log.func("randomResponse() end");
 	return res;
 }
 
 /**
  * メッセージタイプ（DMか否か）でフィルタリングする
  * @param {Message} msg 
- * @param {ResponseMessage[]} resMap 
+ * @param {ResponseMessage[]} resMap
+ * @returns {ResponseMessage[] | null}
  */
 function responseFilterMessageType(msg, resMap)
 {
+	Log.func("responseFilterMessageType()");
+	if(resMap == null) {
+		return null;
+	}
+
 	let result = new Array();
 	for(let res of resMap) {
 		if(res.public && res.private) {
@@ -1049,7 +1083,7 @@ function responseFilterMessageType(msg, resMap)
 			}
 		}
 	}
-	return result;
+	return result.length != 0 ? result : null;
 }
 
 /**
@@ -1058,10 +1092,16 @@ function responseFilterMessageType(msg, resMap)
  * unlock_affection : affection以上になったら開放する
  * @param {Message} msg 
  * @param {ResponseMessage[]} resMap 
- * @param {UserNote} user_note 
+ * @param {UserNote} user_note
+ * @returns {ResponseMessage[] | null}
  */
 function responseFilterAffection(resMap, user_note)
 {
+	Log.func("responseFilterAffection()");
+	if(resMap == null) {
+		return null;
+	}
+
 	let result = new Array();
 	for(let res of resMap) {
 		if(res.unlock_affection == undefined && res.lock_affection == undefined) {
@@ -1073,7 +1113,26 @@ function responseFilterAffection(resMap, user_note)
 		}
 	}
 
-	return result;
+	return result.length != 0 ? result : null;
+}
+
+/**
+ * 寝言または寝言でないかどうかでフィルターをかける
+ * @param {ResponseMap[]} resMap 
+ * @param {Boolean} bool
+ * @returns {ResponseMessage[] | null}
+ */
+function responseFilterSleep(resMap, bool)
+{
+	Log.func("responseFilterSleep():"+bool);
+	let result = new Array();
+	for(let res of resMap) {
+		if(res.sleep == bool) {
+			result.push(res);
+		}
+	}
+
+	return result.length != 0 ? result : null;
 }
 
 /******************************************************************************
@@ -1083,7 +1142,11 @@ function responseFilterAffection(resMap, user_note)
  */
 function randomResponsePick(resMap)
 {
-	FUNCTION_LOG("randomResponsePick() start");
+	Log.func("randomResponsePick() start");
+	if(resMap == null) {
+		return null;
+	}
+
 	let totalProbability = 0;
 	let probability = 0;
 	let cumlativeProbability = 0;
@@ -1097,7 +1160,7 @@ function randomResponsePick(resMap)
 		} else {
 			// コールだけ登録されててレスポンスがないときは即戻る
 			Log.state("response none");
-			FUNCTION_LOG("randomResponsePick() end");
+			Log.func("randomResponsePick() end");
 			return null;
 		}
 	}
@@ -1109,13 +1172,13 @@ function randomResponsePick(resMap)
 		cumlativeProbability += prob;
 		if(probability < cumlativeProbability) {
 			PARAM_LOG(res.msg);
-			FUNCTION_LOG("randomResponsePick() end");
+			Log.func("randomResponsePick() end");
 			return res;
 		}
 	}
 
 	Log.state("response none");
-	FUNCTION_LOG("randomResponsePick() end");
+	Log.func("randomResponsePick() end");
 	return null;
 }
 
