@@ -319,6 +319,8 @@ var STATE = {
 	NEUTRAL : 'NEUTRAL',
 	SINGING : 'SINGING',
 	SLEEPING : 'SLEEPING',
+	LUNCH_SELECT : 'LUNCH_SELECT',
+	LUNCH_EATING : 'LUNCH_EATING',
 	WAIT_CALL : 'WAIT_CALL',
 	SCHEDULE_INPUT_READY : 'SCHEDULE_INPUT_READY',
 	SCHEDULE_INPUT_YESNO : 'SCHEDULE_INPUT_YESNO',
@@ -436,6 +438,83 @@ class EmilyState
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
+const SELECT_MENU_INTERVAL = 3 * 60 * 1000;		// 食事のメニューを選ぶ間隔
+const EAT_INTERVAL = 10 * 60 * 1000;			// 食事を食べる間隔
+
+class Lunch
+{
+	constructor() {
+		this.select_menu_msg_id = null;
+		this.eat_msg_ids = new Array();
+		this.menus = new Array();
+		this.select_menu_timer = null;
+		this.channel = ID_SANDBOX;
+	}
+
+	addMenu(emoji) {
+		if(this.menus.length < 3) {
+			this.menus.push(emoji);
+			Log.param(emoji);
+
+			if(this.menus.length == 3) {
+				clearInterval(this.select_menu_timer);
+				this.eatStart();
+			}
+		} else {
+			// 3つ以上は食べきれない
+		}
+	}
+
+	start() {
+		emily_state.setState(STATE.LUNCH_SELECT);
+		sendMsg(this.channel, ":blush: （今日は何食べようかなぁ…）")
+		.then(msg => {
+			this.select_menu_msg_id = msg.id;
+		});
+
+		let t = this;
+		t.select_menu_timer = setInterval(function(){
+			// 一定時間置きに自分でメニューを選ぶ
+			let keys = Object.keys(foods);
+			let f = keys[random(0, keys.length-1)];
+			if(foods[f][1] == 'main' || foods[f][1] == 'sub' || foods[f][1] == 'sweet') {
+				bot.addMessageReaction(t.channel, t.select_menu_msg_id, f);
+			}
+		}, SELECT_MENU_INTERVAL);
+	}
+
+	eatStart() {
+		emily_state.setState(STATE.LUNCH_EATING);
+		sendMsgWithTyping(this.channel, ":smile: 決めました！\n:slightly: では…いただきます。", 2000);
+		let t = this;
+		t.eat();
+		let timer = setInterval(function() {
+			if(t.menus.length == 0) {
+				sendMsg(t.channel, ":slightly: ごちそうさまでした。");
+				emily_state.setState(STATE.NEUTRAL);
+				clearInterval(timer);
+			} else {
+				t.eat();
+			}
+		}, EAT_INTERVAL);
+	}
+
+	eat() {
+		let meal = this.menus.shift();
+		bot.sendChannelTyping(this.channel);
+		let t = this;
+		// thenで後処理するときはsendMsgWithTypingが使えない
+		setTimeout(function(){
+			sendMsg(t.channel, ":blush: もぐもぐ" + meal.name)
+			.then(msg => {
+				Log.state(`${meal.name}を食べました`, true);
+				t.eat_msg_ids.push(msg.id);
+			});
+		}, 10000);
+	}
+}
+
 var moment = new require('moment');
 class Cron
 {
@@ -522,9 +601,15 @@ class Cron
 					//calender();
 					break;
 				case 12:
+				sendMsg(ID_SANDBOX, ":smile: お昼になりましたね！さあ、昼食に参りましょう♪");
+					if(switch_lunch) {
+						setTimeout(function(){
+							lunch.start();
+						}, 3*60*1000);
+					}
+					break;
 				case 15:
-					let msg = replaceEmoji(`:smile: ${moment().hour()}時ですっ♪`);
-					sendMsg(ID_SANDBOX, msg);
+					sendMsg(ID_SANDBOX, `:smile: ${moment().hour()}時ですっ♪`);
 					break;
 				default:
 					break;
@@ -605,6 +690,7 @@ var user_note = new Array();
 
 const MY_ID = "427105620957593621";             // 自分のID
 const ID_SANDBOX = '427112710816268299';
+const ID_TEST_CH = '426959115517165582';
 
 // いわゆるプレフィックス
 const CALL_NAME = "エミリー";
@@ -620,6 +706,91 @@ const emoji = {
 	':daruma:' : '<:e_:417336851452657674>',
 	':sleeping:' : '<:e_sleeping:432542576441163776>',
 	':singing:' : '<:e_singing:431034523808038923>'
+};
+
+const foods = {
+	'🍔' : ['ハンバーガー','main','like',''],
+	'🌭' : ['ホットドッグ',	'main','like',''],
+	'🍕' : ['ピザ',		'main',	'like',	''],
+	'🍝' : ['スパゲティ','main','like',	''],
+	'🌮' : ['タコス',	'main',	'like',	''],
+	'🌯' : ['ブリトー',	'main',	'like',	''],
+	'🍜' : ['ラーメン',	'main',	'like',	''],
+	'🍲' : ['シチュー',	'main',	'like',	''],
+	'🍣' : ['寿司',		'main',	'like',	''],
+	'🍱' : ['弁当',		'main',	'like',	''],
+	'🍛' : ['カレー',	'main',	'like',	''],
+	'🍙' : ['おにぎり',	'main',	'like',	''],
+	'🍚' : ['ご飯',		'main',	'like',	''],
+	'🍞' : ['パン',		'main',	'like',	''],
+	'🥐' : ['クロワッサン',	'main',	'like',	''],
+	'🥖' : ['フランスパン',	'main',	'like',	''],
+	'🥘' : ['パエリア',		'main',	'like',	''],
+	'🥙' : ['ピタサンド',	'main',	'like',	''],
+	'🍅' : ['トマト',	'sub',	'like',	''],
+	'🍆' : ['茄子',		'sub',	'like',	''],
+	'🌶' : ['唐辛子',	'sub',	'like',	''],
+	'🌽' : ['玉蜀黍',	'sub',	'like',	''],
+	'🍠' : ['薩摩芋',	'sub',	'like',	''],
+	'🧀' : ['チーズ',	'sub',	'like',	''],
+	'🍗' : ['鶏肉',		'sub',	'like',	''],
+	'🍖' : ['肉',		'sub',	'like',	''],
+	'🍤' : ['エビフライ','sub',	'like',	''],
+	'🍳' : ['目玉焼き',	'sub',	'like',	''],
+	'🍟' : ['フライドポテト','sub',	'like',	''],
+	'🍥' : ['魚肉',		'sub',	'like',	''],
+	'🍢' : ['おでん',	'sub',	'like',	''],
+	'🥑' : ['アボカド',	'sub',	'like',	''],
+	'🥒' : ['胡瓜',		'sub',	'like',	''],
+	'🥓' : ['ベーコン',	'sub',	'like',	''],
+	'🥔' : ['馬鈴薯',	'sub',	'like',	''],
+	'🥕' : ['人参',		'sub',	'like',	''],
+	'🥚' : ['卵',		'sub',	'like',	''],
+	'🥗' : ['サラダ',	'sub',	'like',	''],
+	'🍯' : ['蜂蜜',		'sweet','like',	''],
+	'🍏' : ['青林檎',	'sweet','like',	''],
+	'🍎' : ['林檎',		'sweet','like',	''],
+	'🍐' : ['梨',		'sweet','like',	''],
+	'🍊' : ['蜜柑',		'sweet','like',	''],
+	'🍋' : ['檸檬',		'sweet','like',	''],
+	'🍌' : ['バナナ',	'sweet','like',	''],
+	'🍉' : ['西瓜',		'sweet','like',	''],
+	'🍇' : ['葡萄',		'sweet','like',	''],
+	'🍓' : ['苺',		'sweet','like',	''],
+	'🍈' : ['メロン',	'sweet','like',	''],
+	'🍒' : ['さくらんぼ','sweet','like',''],
+	'🍑' : ['桃',		'sweet','like',	''],
+	'🍍' : ['パイナップル','sweet','like',''],
+	'🍡' : ['団子',		'sweet','like',	''],
+	'🍘' : ['煎餅',		'sweet','like',	''],
+	'🍧' : ['かき氷',	'sweet','like',	''],
+	'🍨' : ['アイスクリーム','sweet',	'like',	''],
+	'🍦' : ['ソフトクリーム','sweet',	'like',	''],
+	'🍰' : ['ショートケーキ','sweet',	'like',	''],
+	'🎂' : ['ホールケーキ',	'sweet',	'like',	''],
+	'🍮' : ['プリン',		'sweet',	'like',	''],
+	'🍬' : ['キャンディ',	'sweet',	'like',	''],
+	'🍭' : ['キャンディ',	'sweet',	'like',	''],
+	'🍫' : ['チョコレート',	'sweet',	'like',	''],
+	'🍿' : ['ポップコーン',	'sweet',	'like',	''],
+	'🍩' : ['ドーナツ',		'sweet',	'like',	''],
+	'🍪' : ['クッキー',		'sweet',	'like',	''],
+	'🥜' : ['ナッツ',		'sweet',	'like',	''],
+	'🥝' : ['キウイ',		'sweet',	'like',	''],
+	'🥞' : ['パンケーキ',	'sweet',	'like',	''],
+	'🍺' : ['ビール',	'alcohol',	'like',	''],
+	'🍻' : ['ビール',	'alcohol',	'like',	''],
+	'🍷' : ['ワイン',	'alcohol',	'like',	''],
+	'🍸' : ['カクテル',	'alcohol',	'like',	''],
+	'🍾' : ['シャンパン','alcohol',	'like',	''],
+	'🍶' : ['日本酒',	'alcohol',	'like',	''],
+	'🥂' : ['シャンパン','alcohol',	'like',	''],
+	'🥃' : ['ウイスキー','alcohol',	'like',	''],
+	'🍵' : ['お茶',  'drink',	'like',	''],
+	'☕' : ['珈琲', 'drink',	'like',	''],
+	'🍼' : ['哺乳瓶', 'drink',	'like',	''],
+	'🥛' : ['牛乳',  'drink',	'like',	''],
+	'🍹' : ['トロピカルドリンク','drink',	'like',	'']
 };
 
 // TOMLから読み込むメッセージ群
@@ -655,6 +826,12 @@ var sleep_msg = new Array();
 var cron = new Cron();
 
 var already = false; // 起動後readyの抑制用
+
+var lunch = new Lunch();
+
+var switch_lunch = true;
+
+
 /////////////////////////////////////////////////////////////////////////////////////
 // bot起動
 bot.on("ready", () => {
@@ -858,6 +1035,38 @@ FUNCTION_LOG("on() messageCreate end", 2);
 // Discordに接続する
 bot.connect();
 
+/////////////////////////////////////////////////////////////////////////////////////
+// リアクションが追加された
+bot.on("messageReactionAdd", (msg, emoji, uid) => {
+	if(emily_state.getState() == STATE.LUNCH_SELECT && msg.id == lunch.select_menu_msg_id) {
+		// メニュー決めのメッセージについたら献立に追加
+		lunch.addMenu(emoji);
+	}
+
+	if(emily_state.getState() == STATE.LUNCH_EATING) {
+		// 食事中のメッセージ
+		if(lunch.eat_msg_ids.find((id)=>{return id == msg.id;})) {
+			if(Object.keys(foods).find((food)=>{return food == emoji.name;})) {
+				// 食べ物リストの中にあるものであれば反応を返す
+				switch(foods[emoji.name][1]) {
+					case 'drink': // 飲み物をもらった
+						sendMsgWithTyping(lunch.channel, `<@${uid}> :smile: ありがとうございます♪こくこく…`);
+						break;
+					case 'alcohol': // アルコールは飲めないのでお返し
+						sendMsgWithTyping(lunch.channel, `<@${uid}> :smile: ふふっ…私が成人したら、ご一緒していただけますか？`);
+						// すぐ突き返すのではなくてそっと
+						//setTimeout(function(){
+						//	msg.removeReaction(emoji.name, uid);
+						//}, 3000);
+						break;
+					default:
+						// 飲み物以外はちょっと食べさせてもらう
+						break;
+				}
+			}
+		}
+	}
+});
 
 /////////////////////////////////////////////////////////////////////////////////////
 // authorのDMチャンネルを取得してメッセージを投げる
@@ -923,9 +1132,9 @@ function sendMsg(ch_id, text, aid=null)
 	}
 	PARAM_LOG(res_msg, 0);
 	if(ch_id.id == undefined) {
-		bot.createMessage(ch_id, res_msg);
+		return bot.createMessage(ch_id, res_msg);
 	} else {
-		sendDM(ch_id, res_msg);
+		return sendDM(ch_id, res_msg);
 	}
 }
 
@@ -945,7 +1154,6 @@ function sendMsgWithTyping(ch_id, text, msec=500, aid=null)
 		} else {
 			sendDM(ch_id, res_msg);
 		}
-		PARAM_LOG(res_msg, 0);
 	}, msec);
 }
 
@@ -1538,6 +1746,11 @@ $delete present`;
 			deletePresent();
 		} else if(msg == "$help") {
 			bot.createMessage(call_msg.channel.id, help_msg);
+		} else if(msg == "switch lunch") {
+			switch_lunch = switch_lunch ? false : true;
+			Log.state(`switch_lunch:${switch_lunch}`, true);
+		} else if(msg == "$test") {
+			lunch.start();
 		}
 	}
 }
