@@ -410,18 +410,22 @@ class EmilyState
 			'407242527389777927' : '450320539647737856',
 		};
 		let member = msg.member;
-		var rid = present_table[member.guild.id];
+		//var rid = present_table[member.guild.id];
+		var rid = '450320539647737856';
 
-		member.addRole(rid).then(obj => {
+			//member.addRole(rid).then(obj => {
+			bot.addGuildMemberRole('407242527389777927', msg.author.id, '450320539647737856').then(obj => {
 			// DMにメッセージを送る
 			// 次の親愛度閾値の設定とプレゼントの期限を書込み
 			let aid = msg.author.id;
-			let role = msg.channel.guild.roles.find(function(item){
-				if(item.id == rid) {
-					return true;
-				}
-				return false;
-			});
+			//let role = msg.channel.guild.roles.find(function(item){
+			//	if(item.id == rid) {
+			//		return true;
+			//	}
+			//});
+			let guild = bot.guilds.find((g)=>{return g.id=='407242527389777927';});
+			let role = guild.role.find((r)=>{return r.id==rid;});
+
 			let role_name = role.name.toString();
 			let item_name = role_name.replace("エミリーに貰った", "");
 			let res_msg = `:blush: あの、%nickname%…日頃の感謝をこめて、ささやかながら贈り物をさせてくださいませんか？…はい。\n\`\`\`エミリーから"${item_name}"をもらった\n※本日から1週間、役職"${role_name}"が付与されます。\`\`\``;
@@ -449,7 +453,7 @@ class Lunch
 		this.eat_msg_ids = new Array();
 		this.menus = new Array();
 		this.select_menu_timer = null;
-		this.channel = ID_SANDBOX;
+		this.channel = ID_TEST_CH;
 	}
 
 	addMenu(emoji) {
@@ -1750,7 +1754,7 @@ $delete present`;
 			switch_lunch = switch_lunch ? false : true;
 			Log.state(`switch_lunch:${switch_lunch}`, true);
 		} else if(msg == "$test") {
-			lunch.start();
+			emily_state.present(call_msg);
 		}
 	}
 }
@@ -1970,6 +1974,7 @@ function isAffectionOverPeriod(aid)
  */
 function hasRole(member, role_name)
 {
+	return true;
 	FUNCTION_LOG("hasRole()");
 	// サーバーの役職からrole_nameを見つけて取得
 	let role = member.guild.roles.find(function(item){
