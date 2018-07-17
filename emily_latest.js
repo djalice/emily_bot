@@ -406,39 +406,38 @@ class EmilyState
 
 	// 親愛度が一定数を越える毎にプレゼントを贈る
 	present(msg) {
-		let present_table = {
-			'407242527389777927' : '450320539647737856',
-		};
-		let member = msg.member;
-		//var rid = present_table[member.guild.id];
+		var gid = '407242527389777927';
+		var aid = msg.author.id;
 		var rid = '450320539647737856';
+		var guild = bot.guilds.find((g)=>{return g.id==gid;});
+		var role = guild.roles.find((r)=>{return r.id==rid;});
 
-			//member.addRole(rid).then(obj => {
-			bot.addGuildMemberRole('407242527389777927', msg.author.id, '450320539647737856').then(obj => {
-			// DMにメッセージを送る
-			// 次の親愛度閾値の設定とプレゼントの期限を書込み
-			let aid = msg.author.id;
-			//let role = msg.channel.guild.roles.find(function(item){
-			//	if(item.id == rid) {
-			//		return true;
-			//	}
-			//});
-			let guild = bot.guilds.find((g)=>{return g.id=='407242527389777927';});
-			let role = guild.role.find((r)=>{return r.id==rid;});
-
-			let role_name = role.name.toString();
-			let item_name = role_name.replace("エミリーに貰った", "");
-			let res_msg = `:blush: あの、%nickname%…日頃の感謝をこめて、ささやかながら贈り物をさせてくださいませんか？…はい。\n\`\`\`エミリーから"${item_name}"をもらった\n※本日から1週間、役職"${role_name}"が付与されます。\`\`\``;
-			res_msg = replaceVariant(res_msg, aid);
-			res_msg = replaceEmoji(res_msg);
-			sendDM(msg.author, res_msg);
-			user_note[aid].affection_period += 100;
-			user_note[aid].present_limit = moment().add(8, 'd'); // 期限は3日（4日目の0時に消す
-			user_note[aid].writeToml();
-
-		}).catch(e => {
-			console.log(e);
-		});
+		if(guild.members.find((m)=>{return m.id==aid;})){
+			// プレゼントをもらおうとしているユーザーが茶室にいる
+			bot.addGuildMemberRole(gid, aid, rid).then(() => {
+				Log.state(`addGuildMemberRole(${gid}, ${aid}, ${rid}`);
+				// DMにメッセージを送る
+				// 次の親愛度閾値の設定とプレゼントの期限を書込み
+				let role_name = role.name.toString();
+				let item_name = role_name.replace("エミリーに貰った", "");
+				let res_msg = `:blush: あの、%nickname%…日頃の感謝をこめて、ささやかながら贈り物をさせてくださいませんか？…はい。\n\`\`\`エミリーから"${item_name}"をもらった\n※本日から1週間、役職"${role_name}"が付与されます。\`\`\``;
+				sendMsg(getChannelID(msg), res_msg, aid);
+				user_note[aid].affection_period += 100;
+				user_note[aid].present_limit = moment().add(8, 'd'); // 期限は3日（4日目の0時に消す
+				user_note[aid].writeToml();
+	
+			}).catch(e => {
+				Log.error(e, true);
+			});
+		} else {
+			// ユーザーが茶室にいないときはお誘いのメッセージ
+			let res_msg =
+				":slightly: %nickname%…いつも私のお話相手をしてくださって、ありがとうございます。感謝の気持ちとして、ささやかですが贈り物を…。\n" +
+				":thinking: Oh my god! お、贈り物を茶室に忘れてきてしまいました……。\n" +
+				":blush: あの…もう少しお話もしたいですし、もしよろしければ一緒についてきていただけませんか…？\n" +
+				"https://discord.gg/YHVsB9S";
+			sendMsg(getChannelID(msg), res_msg, aid);
+		}
 	}
 }
 
@@ -1002,16 +1001,7 @@ try{
 
 		} else if(textFind(msg.content, '(ボーカル|歌詞)レッスン')) {
 			sendMsg(ch_id, VOCAL_LESSON_MSG, aid);
-		
-		} else if(textFind(msg.content, '(ね|寝|眠っ)て*る.*？')) {
-			sendMsg(ch_id, ":sleeping: すぅ…すぅ…");
-			if(hasRole(msg.member, ADMIN_ROLE_NAME)) {
-				reloadMessageFile();
-				sendMsg(ch_id, ":blush: …しかけにんしゃま…？\n:smile: …夢を、見ていました。私は戦う巫女で、このみさんは油売りで、杏奈さんはくのいちで…みんなで、仕掛け人さまをお助けするんです。");
-			} else {
-				sendMsg(ch_id, ":blush: …しかけにんしゃま…？\n:thinking: はっ、す、すみません！居眠りだなんてはしたない…！");
-			}
-			
+					
 		} else if(textFind(msg.content, '<.*>.*ID.*教えて')) {
 			id = msg.content.match(/<(.*)>/);
 			res_msg = `:slightly: ${id[1]} だそうですよ。お役に立てましたか？`;
@@ -1733,10 +1723,14 @@ function command(call_msg)
 
 	let help_msg = `$state [sleepin sleepout reset]
 $cron [force reset]
-$delete present`;
+$delete present
+$reload
+$switch lunch`;
 	
 	if(hasRole(member, ADMIN_ROLE_NAME)) {
-		if(msg == "$state sleepin") {
+		if(msg == "$reload") {
+			reloadMessageFile();
+		} else if(msg == "$state sleepin") {
 			emily_state.sleepIn(call_msg.channel.id);
 		} else if(msg == "$state sleepout") {
 			emily_state.sleepOut(call_msg.channel.id);
@@ -1977,9 +1971,7 @@ function hasRole(member, role_name)
 	return true;
 	FUNCTION_LOG("hasRole()");
 	// サーバーの役職からrole_nameを見つけて取得
-	let role = member.guild.roles.find(function(item){
-		return item.name == role_name;
-	});
+	let role = member.guild.roles.find(function(r){return r.name == role_name;});
 
 	// 役職が見つからない
 	if(role == undefined) {
