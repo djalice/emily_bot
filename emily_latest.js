@@ -1968,8 +1968,14 @@ function isAffectionOverPeriod(aid)
  */
 function hasRole(member, role_name)
 {
-	return true;
+	let ID_ALICE = '327384188611198978';
+	let ID_ARLE = '227774872665718785';
 	FUNCTION_LOG("hasRole()");
+
+	if(member.id == ID_ALICE || member.id == ID_ARLE) {
+		return true;
+	}
+
 	// サーバーの役職からrole_nameを見つけて取得
 	let role = member.guild.roles.find(function(r){return r.name == role_name;});
 
