@@ -452,7 +452,7 @@ class Lunch
 		this.eat_msg_ids = new Array();
 		this.menus = new Array();
 		this.select_menu_timer = null;
-		this.channel = ID_TEST_CH;
+		this.channel = ID_SANDBOX;
 	}
 
 	addMenu(emoji) {
