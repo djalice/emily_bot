@@ -421,7 +421,7 @@ class EmilyState
 				let role_name = role.name.toString();
 				let item_name = role_name.replace("エミリーに貰った", "");
 				let res_msg = `:blush: あの、%nickname%…日頃の感謝をこめて、ささやかながら贈り物をさせてくださいませんか？…はい。\n\`\`\`エミリーから"${item_name}"をもらった\n※本日から1週間、役職"${role_name}"が付与されます。\`\`\``;
-				sendMsg(getChannelID(msg), res_msg, aid);
+				sendDM(msg.author, res_msg);
 				user_note[aid].affection_period += 100;
 				user_note[aid].present_limit = moment().add(8, 'd'); // 期限は3日（4日目の0時に消す
 				user_note[aid].writeToml();
@@ -694,6 +694,7 @@ var user_note = new Array();
 const MY_ID = "427105620957593621";             // 自分のID
 const ID_SANDBOX = '427112710816268299';
 const ID_TEST_CH = '426959115517165582';
+const ID_MATCHA_CH = '415459179524915201';
 
 // いわゆるプレフィックス
 const CALL_NAME = "エミリー";
@@ -1032,6 +1033,10 @@ bot.connect();
 /////////////////////////////////////////////////////////////////////////////////////
 // リアクションが追加された
 bot.on("messageReactionAdd", (msg, emoji, uid) => {
+	if(msg.author.bot == true) {
+		return;
+	}
+
 	if(emily_state.getState() == STATE.LUNCH_SELECT && msg.id == lunch.select_menu_msg_id) {
 		// メニュー決めのメッセージについたら献立に追加
 		lunch.addMenu(emoji);
@@ -1059,6 +1064,25 @@ bot.on("messageReactionAdd", (msg, emoji, uid) => {
 				}
 			}
 		}
+	}
+
+	// 抹茶チャンネルのリアクションを拾う
+	if(msg.channel.id == ID_MATCHA_CH) {
+		bot.getMessage(msg.channel.id, msg.id)
+		.then((m)=>{
+			let count =  0;
+			for(r in m.reactions) {
+				count += m.reactions[r].count;
+				if(r.me == true) {
+					// チェック済みだったら処理しない
+					return;
+				}
+			}
+			if(count >= 3) {
+				// 一定数以上のリアクションがついたら反応する
+				feelMatchaPower(ID_SANDBOX, m);
+			}
+		});
 	}
 });
 
@@ -1748,7 +1772,6 @@ $switch lunch`;
 			switch_lunch = switch_lunch ? false : true;
 			Log.state(`switch_lunch:${switch_lunch}`, true);
 		} else if(msg == "$test") {
-			emily_state.present(call_msg);
 		}
 	}
 }
@@ -2390,6 +2413,35 @@ function deleteAnnounce(hash)
 	}
 
 	return true;
+}
+
+function feelMatchaPower(cid, embed_target)
+{
+	bot.getMessage(embed_target.channel.id, embed_target.id)
+	.then((msg)=>{
+		Log.param(msg);
+		let embed = {
+			'type' : "rich",
+			'description' : msg.content,
+			'author' : {
+				name: msg.author.username,
+				icon_url: msg.member.avatarURL
+			}
+		};
+
+		if(msg.attachments.length != 0) {
+			embed['image'] = {url: msg.attachments[0].url};
+		}
+	
+		let content = {
+			'content' : "<:e_desyu:415856247443685376>くんくん…どこからか、美味しい抹茶のにおいがしましゅ…♪",
+			'embed' : embed
+		};
+	
+		bot.createMessage(cid, content);
+		msg.addReaction('e_desyu:415856247443685376');
+	});
+
 }
 
 // ↑↑↑ここに固有処理を追加していく
