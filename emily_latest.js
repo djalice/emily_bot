@@ -14,6 +14,17 @@ const readFileAsync = promisify(fs.readFile);
 
 const ADMIN_ROLE_NAME = "Admin";
 
+const MY_ID = "427105620957593621";			// 自分のID
+const ID_TEST_CH = '426959115517165582';	// テストサーバーのチャンネルID
+const ID_SANDBOX = '427112710816268299';	// 砂場chID
+const ID_MATCHA_CH = '415459179524915201';	// 抹茶buzz監視チャンネルID
+const REACTION_FEEL_MATCHA_POWER = 'e_desyu:415856247443685376';// 抹茶buzzを検知したときのリアクション
+
+const CALL_NAME = "エミリー";				// いわゆるプレフィックス
+
+const SELECT_MENU_INTERVAL = 3 * 60 * 1000;	// 食事のメニューを選ぶ間隔
+const EAT_INTERVAL = 10 * 60 * 1000;		// 食事を食べる間隔
+
 /////////////////////////////////////////////////////////////////////////////////////
 // ログ出力用
 const LOGGING_LEVEL = 3;    // Lvが高いほど詳細なログ
@@ -442,9 +453,6 @@ class EmilyState
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-const SELECT_MENU_INTERVAL = 3 * 60 * 1000;		// 食事のメニューを選ぶ間隔
-const EAT_INTERVAL = 10 * 60 * 1000;			// 食事を食べる間隔
-
 class Lunch
 {
 	constructor() {
@@ -689,15 +697,6 @@ function deletePresent()
 /////////////////////////////////////////////////////////////////////////////////////
 var emily_state = new EmilyState();
 var user_note = new Array();
-
-
-const MY_ID = "427105620957593621";             // 自分のID
-const ID_SANDBOX = '427112710816268299';
-const ID_TEST_CH = '426959115517165582';
-const ID_MATCHA_CH = '415459179524915201';
-
-// いわゆるプレフィックス
-const CALL_NAME = "エミリー";
 
 // 茶室の固有絵文字変換テーブル
 const emoji = {
@@ -1033,10 +1032,6 @@ bot.connect();
 /////////////////////////////////////////////////////////////////////////////////////
 // リアクションが追加された
 bot.on("messageReactionAdd", (msg, emoji, uid) => {
-	if(msg.author.bot == true) {
-		return;
-	}
-
 	if(emily_state.getState() == STATE.LUNCH_SELECT && msg.id == lunch.select_menu_msg_id) {
 		// メニュー決めのメッセージについたら献立に追加
 		lunch.addMenu(emoji);
@@ -1073,7 +1068,7 @@ bot.on("messageReactionAdd", (msg, emoji, uid) => {
 			let count =  0;
 			for(r in m.reactions) {
 				count += m.reactions[r].count;
-				if(r.me == true) {
+				if(m.reactions[r].me == true) {
 					// チェック済みだったら処理しない
 					return;
 				}
@@ -2419,7 +2414,6 @@ function feelMatchaPower(cid, embed_target)
 {
 	bot.getMessage(embed_target.channel.id, embed_target.id)
 	.then((msg)=>{
-		Log.param(msg);
 		let embed = {
 			'type' : "rich",
 			'description' : msg.content,
@@ -2439,7 +2433,7 @@ function feelMatchaPower(cid, embed_target)
 		};
 	
 		bot.createMessage(cid, content);
-		msg.addReaction('e_desyu:415856247443685376');
+		msg.addReaction(REACTION_FEEL_MATCHA_POWER);
 	});
 
 }
