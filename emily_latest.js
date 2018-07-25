@@ -3,6 +3,7 @@ const Eris = require("eris");
 const PrivateChannel = require("eris/lib/structures/PrivateChannel");
 const Role = require("eris/lib/structures/Role");
 const Log = require("./Log.js");
+const Location = require("./Location.js");
 var bot = new Eris(process.env.BOT_KEY);
 
 // TOML読み込み関連
@@ -16,9 +17,10 @@ const ADMIN_ROLE_NAME = "Admin";
 
 const MY_ID = "427105620957593621";			// 自分のID
 const ID_TEST_CH = '426959115517165582';	// テストサーバーのチャンネルID
+const ID_TEAROOM = "407242527389777927";	// 茶室のサーバーID
 const ID_SANDBOX = '427112710816268299';	// 砂場chID
 const ID_MATCHA_CH = '415459179524915201';	// 抹茶buzz監視チャンネルID
-const REACTION_FEEL_MATCHA_POWER = 'e_desyu:415856247443685376';// 抹茶buzzを検知したときのリアクション
+const REACTION_FEEL_MATCHA_POWER = 'e_desyu:415856247443685376';// チェック済みの抹茶buzzに付けるリアクション
 
 const CALL_NAME = "エミリー";				// いわゆるプレフィックス
 
@@ -296,8 +298,6 @@ class UserNote
 
 		output += "]";
 
-		PARAM_LOG("---output---")
-		PARAM_LOG(output);
 		fs.writeFileSync("./UserNote/" + this.id + ".toml", output);
 		FUNCTION_LOG("writeToml() end");
 	}
@@ -341,12 +341,14 @@ var STATE = {
 
 class EmilyState
 {
-	constructor() {
+	constructor(bot_, log_) {
 		this.state = STATE.NEUTRAL;
 		this.prev_state = STATE.NEUTRAL;
 		this.play_alone_timer = null;
 		this.personal_state = new Array();
 		this.state_cancel_timer = new Array();
+		this.location = new Location(bot_, log_);
+		this.location_move_timer = null;
 	}
 
 	setState(s, aid=null) {
@@ -357,6 +359,7 @@ class EmilyState
 			this.prev_state = this._state;
 			this.state = s;
 			Log.state(`状態を設定しました(${s})`, true);
+			this.refleshActivity();
 		}
 	}
 
@@ -394,6 +397,9 @@ class EmilyState
 
 	// 眠りにつく
 	sleepIn(ch_id = ID_SANDBOX) {
+		this.location.stay = true;
+		this.stopLocationMoveTimer();	// 寝るときは勝手に移動しないように
+		this.location.move(ID_TEAROOM, ID_SANDBOX);
 		this.setState(STATE.SLEEPING);
 		let res = randomResponsePick(sleep_msg['sleepin']);
 		sendMsg(ch_id, res.msg);
@@ -402,6 +408,8 @@ class EmilyState
 
 	// 眠りから目覚める
 	sleepOut(ch_id = ID_SANDBOX) {
+		this.location.stay = false;
+		this.startLocationMoveTimer();	// 起きたら移動できるように
 		this.setState(STATE.NEUTRAL);
 		let res = randomResponsePick(sleep_msg['sleepout']);
 		sendMsg(ch_id, res.msg);
@@ -417,7 +425,7 @@ class EmilyState
 
 	// 親愛度が一定数を越える毎にプレゼントを贈る
 	present(msg) {
-		var gid = '407242527389777927';
+		var gid = ID_TEAROOM;
 		var aid = msg.author.id;
 		var rid = '450320539647737856';
 		var guild = bot.guilds.find((g)=>{return g.id==gid;});
@@ -434,7 +442,7 @@ class EmilyState
 				let res_msg = `:blush: あの、%nickname%…日頃の感謝をこめて、ささやかながら贈り物をさせてくださいませんか？…はい。\n\`\`\`エミリーから"${item_name}"をもらった\n※本日から1週間、役職"${role_name}"が付与されます。\`\`\``;
 				sendDM(msg.author, res_msg);
 				user_note[aid].affection_period += 100;
-				user_note[aid].present_limit = moment().add(8, 'd'); // 期限は3日（4日目の0時に消す
+				user_note[aid].present_limit = moment().add(8, 'd'); // 期限は7日（8日目の0時に消す
 				user_note[aid].writeToml();
 	
 			}).catch(e => {
@@ -449,6 +457,60 @@ class EmilyState
 				"https://discord.gg/YHVsB9S";
 			sendMsg(getChannelID(msg), res_msg, aid);
 		}
+	}
+
+	// チャンネル間を移動する
+	startLocationMoveTimer() {
+		if(this.location_move_timer != null) {
+			clearInterval(this.location_move_timer);
+			Log.state("location_move_timer clear");
+		}
+
+		var t = this;
+		this.location_move_timer = setInterval(function(){
+			let g = t.location.guild;
+			let ch_map = t.location.map[g];
+			do {
+				let i = random(0, ch_map.length);
+				let ch = ch_map[i];
+				if(t.location.channel != ch) {
+					t.location.move(g, ch_map[i]);
+					break;
+				}
+			} while(true);
+
+			t.refleshActivity();
+		}, 60*60*1000);
+	}
+
+	// チャンネル間の移動を中止する
+	stopLocationMoveTimer() {
+		clearInterval(this.location_move_timer);
+		this.location_move_timer = null;
+	}
+
+	refleshActivity() {
+		let ch = bot.getChannel(this.location.channel);
+		let act = "";
+		switch(this.getState()) {
+			case STATE.NEUTRAL:
+				act = ch.name + "にいます";
+				break;
+			case STATE.LUNCH_SELECT:
+			case STATE.LUNCH_EATING:
+				act = ch.name + "で昼食をとっています";
+				break;
+			case STATE.SINGING:
+				act = ch.name + "で歌っています";
+				break;
+			case STATE.SLEEPING:
+				act = ch.name + "でおやすみ中です"
+				break;
+		}
+		var game = new Object();
+		game.name = act;
+		bot.editStatus("online", game);
+		Log.state("activity:" + game.name);
 	}
 }
 
@@ -612,6 +674,8 @@ class Cron
 					//calender();
 					break;
 				case 12:
+				emily_state.location.move(ID_TEAROOM, ID_SANDBOX);
+				emily_state.refleshActivity();
 				sendMsg(ID_SANDBOX, ":smile: お昼になりましたね！さあ、昼食に参りましょう♪");
 					if(switch_lunch) {
 						setTimeout(function(){
@@ -675,7 +739,7 @@ function deletePresent()
 	FUNCTION_LOG("deletePresent() start");
 	bot.guilds.find(function(guild) {
 		// 茶室限定
-		if(guild.id == "407242527389777927") {
+		if(guild.id == ID_TEAROOM) {
 			guild.members.forEach(function(member){
 				if((user_note[member.id] != undefined) // UserNoteが存在する
 					&& (user_note[member.id].present_limit != null) // プレゼントの期限が設定されている
@@ -695,7 +759,7 @@ function deletePresent()
 	});
 }
 /////////////////////////////////////////////////////////////////////////////////////
-var emily_state = new EmilyState();
+var emily_state = new EmilyState(bot, Log);
 var user_note = new Array();
 
 // 茶室の固有絵文字変換テーブル
@@ -849,20 +913,8 @@ bot.on("ready", () => {
 		emily_state.setPlayAloneTimer();
 		cron.initPer1hour();
 		
-		var timer = setInterval(function(){
-			let place = [
-				"控え室　　　　　　　　　　　　　　　　",
-				"事務室　　　　　　　　　　　　　　　　",
-				"レッスン室　　　　　　　　　　　　　　",
-				"ドレスアップルーム　　　　　　　　　　",
-				"エントランス　　　　　　　　　　　　　"
-			];
-			let i = random(0, 4);
-			var game = new Object();
-			game.name = place[i];
-			bot.editStatus("online", game);
-			Log.state("Status change->" + place[i]);
-		}, 600000);
+		emily_state.refleshActivity();
+		emily_state.startLocationMoveTimer();
 
 		readAnnounce(); // お知らせ読み込み
 		already = true;
@@ -902,8 +954,7 @@ try{
 		FUNCTION_LOG("on() messageCreate start", 2);
 	}
 	let ch_id = msg.channel.id;
-	let is_call = isCall(msg.content);             // 発言内に呼びかけがあるか
-	let is_force_call = false;                     // 強制呼びかけ
+	let is_response = false;
 	let rand = random(0, 100);
 
 	if(msg.content[0] == '$') {
@@ -914,6 +965,10 @@ try{
 		return;
 	}
 
+	if(isCall(msg.content)) {
+		is_response = true;
+	}
+
 	// ここから下はエミリーの見える範囲で誰かが喋っている
 	emily_state.setPlayAloneTimer();
 
@@ -921,24 +976,26 @@ try{
 	if(!msg.author.bot && (msg.channel.constructor === PrivateChannel)) {
 		Log.state("private channel id=" + msg.author.id, true);
 		ch_id = msg.author; // sendMsgを流用するため、情報を置き換える
-		is_force_call = true;
+		is_response = true;
 	}
 	
-	if(!msg.author.bot && (
-		!is_call && (rand<50)               // ときどき反応する
-		|| (msg.channel.id == ID_SANDBOX)   // 特定のチャンネルにいるとき
-	)) {
-		is_force_call = true;
+	if(!msg.author.bot &&
+		(msg.channel.id == emily_state.location.channel) // 自分のいるチャンネル
+	) {
+		if(emily_state.location.stay != true) {
+			emily_state.startLocationMoveTimer();	// 自分のいるチャンネルで発言があったら移動タイマーをクリア
+		}
+		is_response = true;
 	}
 
 	switch(emily_state.getState(msg.author.id)) {
 		case STATE.SCHEDULE_INPUT_READY:
 		case STATE.SCHEDULE_INPUT_YESNO:
 		case STATE.SCHEDULE_DELETE:
-			is_force_call = true;
+			is_response = true;
 			break;
 		case STATE.WAIT_CALL:
-			is_force_call = true;
+			is_response = true;
 			emily_state.setState(STATE.NEUTRAL, msg.author.id);
 			break;
 		default:
@@ -955,68 +1012,71 @@ try{
 	// ブロックコード内は削除して読まないようにする
 	msg.content = msg.content.replace(/```(.|\n)*```/g, "");
 
-	// 相手がbotでない＋呼びかけが発言内にあるとき反応する
-	if(!msg.author.bot && (is_call || is_force_call)) {
-		let aid = msg.author.id;
-		let res_msg;
+	// 相手がbotか、反応する条件にマッチしていないときは処理を終わる
+	if(msg.author.bot || !is_response) {
+		return;
+	}
 
-		// UserNoteがまだ作られていなかったら作成する
-		Log.state("user_note="+user_note[aid]);
-		if(user_note[aid] == undefined) {
-			Log.state("New UserNote create");
-			user_note[aid] = new UserNote(aid);
-			user_note[aid].writeToml();
-		}
+	let aid = msg.author.id;
+	let res_msg;
 
-		// スケジュール管理
-		// 状態による振り分けは中でやる
-		if(scheduleManager(msg) == true) {
-			// スケジュール管理中のときは残りの処理はやらない
-			return;
-		}
+	// UserNoteがまだ作られていなかったら作成する
+	Log.state("user_note="+user_note[aid]);
+	if(user_note[aid] == undefined) {
+		Log.state("New UserNote create");
+		user_note[aid] = new UserNote(aid);
+		user_note[aid].writeToml();
+	}
 
-		if(!is_force_call
-			&& (msg.channel.constructor !== PrivateChannel) // DMのときはstatusが取得できないので処理しない
-			&& (msg.member.status == 'offline')
-			&& (emily_state.getState() != STATE.SLEEPING)) {
-			// オフライン状態にしてコールすると探す
-			let res = randomResponsePick(status_offline_msg['response']);
-			sendMsgWithTyping(ch_id, res.msg, 500, aid);
+	// スケジュール管理
+	// 状態による振り分けは中でやる
+	if(scheduleManager(msg) == true) {
+		// スケジュール管理中のときは残りの処理はやらない
+		return;
+	}
 
-		} else if((res_msg = randomResponse(msg, random_res_msg)) != null) {
-			if(emily_state.getState() == STATE.SLEEPING) {
-				// 寝てるときはちょっと間をおいて喋る
-				sendMsgWithTyping(ch_id, res_msg.msg, 2000, aid);
-			} else {
-				// ランダム定型文を探して、あれば返答
-				res_msg.funcFire(msg);
-
-				// 親愛度100区切りでプレゼントを贈る
-				if(isAffectionOverPeriod(aid) == true) {
-					emily_state.present(msg);
-				}
-			}
-		} else if(textFind(msg.content, '(ビジュアル|表現力)レッスン')) {
-			sendMsg(ch_id, VISUAL_LESSON_MSG, aid);
-
-		} else if(textFind(msg.content, '(ボーカル|歌詞)レッスン')) {
-			sendMsg(ch_id, VOCAL_LESSON_MSG, aid);
-					
-		} else if(textFind(msg.content, '<.*>.*ID.*教えて')) {
-			id = msg.content.match(/<(.*)>/);
-			res_msg = `:slightly: ${id[1]} だそうですよ。お役に立てましたか？`;
-			sendMsgWithTyping(ch_id, res_msg);
-
+	if((res_msg = randomResponse(msg, random_res_msg)) != null) {
+		if(emily_state.getState() == STATE.SLEEPING) {
+			// 寝てるときはちょっと間をおいて喋る
+			sendMsgWithTyping(ch_id, res_msg.msg, 2000, aid);
 		} else {
-			if (!is_force_call) {
-				// 低確率でコマンドに一致しない「エミリー」に反応する
-				if(rand < 30 || msg.content == 'エミリー') {
-					sendMsgWithTyping(ch_id, ":slightly: お呼びでしょうか、%nickname%。", 500, aid);
-					emily_state.setState(STATE.WAIT_CALL, aid);
-			   }
+			// ランダム定型文を探して、あれば返答
+			res_msg.funcFire(msg);
+
+			// 親愛度100区切りでプレゼントを贈る
+			if(isAffectionOverPeriod(aid) == true) {
+				emily_state.present(msg);
+			}
+		}
+	} else if(textFind(msg.content, '(ビジュアル|表現力)レッスン')) {
+		sendMsg(ch_id, VISUAL_LESSON_MSG, aid);
+
+	} else if(textFind(msg.content, '(ボーカル|歌詞)レッスン')) {
+		sendMsg(ch_id, VOCAL_LESSON_MSG, aid);
+				
+	} else if(textFind(msg.content, '<.*>.*ID.*教えて')) {
+		id = msg.content.match(/<(.*)>/);
+		res_msg = `:slightly: ${id[1]} だそうですよ。お役に立てましたか？`;
+		sendMsgWithTyping(ch_id, res_msg);
+
+	} else if(textFind(msg.content, '(おいで|こっち)')) {
+		if(isCall(msg.content)) {
+			emily_state.location.move(msg.channel.guild.id, msg.channel.id);
+			emily_state.refleshActivity();
+			sendMsgWithTyping(emily_state.location.channel, ":smile: はいっ♪おまたせしました！", 3000);
+		}
+
+	} else {
+		if(isCall(msg.content) && (rand<30)) {
+			if(msg.channel.id != emily_state.location.channel) {
+				sendMsg(emily_state.location.channel, ":blush: （あら…呼ばれたかしら…）");
+			} else {
+				sendMsgWithTyping(msg.channel.id, ":slightly: お呼びでしょうか、%nickname%。", 500, aid);
+				emily_state.setState(STATE.WAIT_CALL, aid);
 			}
 		}
 	}
+
 } catch(e) {
 	Log.state(e, true);
 	sendMsg(msg.channel.id, "す、すみません…ちょっと具合が…");
@@ -1673,15 +1733,17 @@ function readUserNote()
 	let dir = './UserNote/';
 
 	fs.readdir(dir, function(err, files){
-		console.dir(files);
 		// ディレクトリ内のファイル毎に対して
+		let count = 0;
 		for(file of files) {
 			PARAM_LOG(file, 99);
 			let path = dir + file;
 			let id = file.split(".")[0];
 			user_note[id] = new UserNote();
 			user_note[id].readToml(id);
-		}        
+			count++;
+		}
+		Log.state(`UserNote: ${count}files read`);
 	})
 
 	FUNCTION_LOG("readUserNote() end");
@@ -1731,6 +1793,7 @@ function reloadMessageFile()
 	readLyric();
 	readMusic();
 	readUserNote();
+	emily_state.location.readMap("location_map.toml");
 }
 
 
