@@ -12,8 +12,8 @@ var bot;
 var Location = function(bot_, log_) {
 	bot = bot_;
 	Log = log_;
-	this.guild = '426959115517165579';
-	this.channel = '426959115517165582';
+	this.guild = '407242527389777927';
+	this.channel = '427112710816268299';
 	this.map = new Array();
 	this.stay = false;
 }
