@@ -27,6 +27,15 @@ const CALL_NAME = "エミリー";				// いわゆるプレフィックス
 const SELECT_MENU_INTERVAL = 3 * 60 * 1000;	// 食事のメニューを選ぶ間隔
 const EAT_INTERVAL = 10 * 60 * 1000;		// 食事を食べる間隔
 
+// チャンネルのタイプ
+const CH_TYPE = {
+	GUILD_TEXT : 0,
+	DM : 1,
+	GUILD_VOICE : 2,
+	GROUP_DM : 3,
+	GUILD_CATEGORY : 4
+};
+
 /////////////////////////////////////////////////////////////////////////////////////
 // ログ出力用
 const LOGGING_LEVEL = 3;    // Lvが高いほど詳細なログ
@@ -333,6 +342,7 @@ var STATE = {
 	LUNCH_SELECT : 'LUNCH_SELECT',
 	LUNCH_EATING : 'LUNCH_EATING',
 	WAIT_CALL : 'WAIT_CALL',
+	TALKING : 'TALKING',
 	SCHEDULE_INPUT_READY : 'SCHEDULE_INPUT_READY',
 	SCHEDULE_INPUT_YESNO : 'SCHEDULE_INPUT_YESNO',
 	SCHEDULE_DELETE : 'SCHEDULE_DELETE',
@@ -354,6 +364,7 @@ class EmilyState
 	setState(s, aid=null) {
 		if(aid != null) {
 			this.personal_state[aid] = s;
+			this.stateCancelTimer(aid);
 			Log.state(`状態を設定しました(${s}, ${aid})`, true);
 		} else {
 			this.prev_state = this._state;
@@ -416,10 +427,11 @@ class EmilyState
 	}
 
 	// ユーザー個別のエミリーの状態をキャンセルするタイマー作動
-	stateCancelTimer(aid, sec=30000) {
+	stateCancelTimer(aid, sec=180000) {
+		let t = this;
 		this.state_cancel_timer[aid] = setTimeout(function(){
 			Log.state("*** State Cancel ***", true);
-			this.personal_state[aid] = STATE.NEUTRAL;
+			t.personal_state[aid] = STATE.NEUTRAL;
 		}, sec);
 	}
 
@@ -1042,6 +1054,7 @@ try{
 		} else {
 			// ランダム定型文を探して、あれば返答
 			res_msg.funcFire(msg);
+			emily_state.setState(STATE.TALKING, aid);
 
 			// 親愛度100区切りでプレゼントを贈る
 			if(isAffectionOverPeriod(aid) == true) {
@@ -1060,10 +1073,11 @@ try{
 		sendMsgWithTyping(ch_id, res_msg);
 
 	} else if(textFind(msg.content, '(おいで|こっち)')) {
-		if(isCall(msg.content)) {
+		if(isCall(msg.content) && msg.channel.type == CH_TYPE.GUILD_TEXT) {
 			emily_state.location.move(msg.channel.guild.id, msg.channel.id);
 			emily_state.refleshActivity();
 			sendMsgWithTyping(emily_state.location.channel, ":smile: はいっ♪おまたせしました！", 3000);
+			emily_state.setState(STATE.TALKING, aid);
 		}
 
 	} else {

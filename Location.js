@@ -6,14 +6,21 @@ const {promisify} = require('util');
 const fs = require('fs');
 const readFileSync = promisify(fs.readFile);
 
+// 茶室
+const DEFAULT_GUILD = '407242527389777927';
+const DEFAULT_CHANNEL = '427112710816268299';
+// テストサーバー
+//const DEFAULT_GUILD = '426959115517165579';
+//const DEFAULT_CHANNEL = '426959115517165582';
+
 var Log;
 var bot;
 
 var Location = function(bot_, log_) {
 	bot = bot_;
 	Log = log_;
-	this.guild = '407242527389777927';
-	this.channel = '427112710816268299';
+	this.guild = DEFAULT_GUILD;
+	this.channel = DEFAULT_CHANNEL;
 	this.map = new Array();
 	this.stay = false;
 }
