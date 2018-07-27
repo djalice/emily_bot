@@ -16,6 +16,7 @@ const readFileAsync = promisify(fs.readFile);
 const ADMIN_ROLE_NAME = "Admin";
 
 const MY_ID = "427105620957593621";			// 自分のID
+const ID_TEST_GUILD = '426959115517165579';	// テストサーバーのID
 const ID_TEST_CH = '426959115517165582';	// テストサーバーのチャンネルID
 const ID_TEAROOM = "407242527389777927";	// 茶室のサーバーID
 const ID_SANDBOX = '427112710816268299';	// 砂場chID
@@ -24,6 +25,8 @@ const REACTION_FEEL_MATCHA_POWER = 'e_desyu:415856247443685376';// チェック�
 
 const CALL_NAME = "エミリー";				// いわゆるプレフィックス
 
+const STATE_CANCEL_TIME = 3* 60 * 1000;	// ユーザー毎の状態をクリアするまでの時間
+const LOCATION_MOVE_INTERVAL = 45* 60*1000;
 const SELECT_MENU_INTERVAL = 3 * 60 * 1000;	// 食事のメニューを選ぶ間隔
 const EAT_INTERVAL = 10 * 60 * 1000;		// 食事を食べる間隔
 
@@ -369,7 +372,7 @@ class EmilyState
 		} else {
 			this.prev_state = this._state;
 			this.state = s;
-			Log.state(`状態を設定しました(${s})`, true);
+			Log.state(`状態を設定しました(${s})`);
 			this.refleshActivity();
 		}
 	}
@@ -408,7 +411,6 @@ class EmilyState
 
 	// 眠りにつく
 	sleepIn(ch_id = ID_SANDBOX) {
-		this.location.stay = true;
 		this.stopLocationMoveTimer();	// 寝るときは勝手に移動しないように
 		this.location.move(ID_TEAROOM, ID_SANDBOX);
 		this.setState(STATE.SLEEPING);
@@ -419,7 +421,6 @@ class EmilyState
 
 	// 眠りから目覚める
 	sleepOut(ch_id = ID_SANDBOX) {
-		this.location.stay = false;
 		this.startLocationMoveTimer();	// 起きたら移動できるように
 		this.setState(STATE.NEUTRAL);
 		let res = randomResponsePick(sleep_msg['sleepout']);
@@ -427,11 +428,16 @@ class EmilyState
 	}
 
 	// ユーザー個別のエミリーの状態をキャンセルするタイマー作動
-	stateCancelTimer(aid, sec=180000) {
+	stateCancelTimer(aid, sec=STATE_CANCEL_TIME) {
 		let t = this;
+		if(this.state_cancel_timer[aid] != null) {
+			clearTimeout(this.state_cancel_timer[aid]);
+			this.state_cancel_timer[aid] = null;
+		}
 		this.state_cancel_timer[aid] = setTimeout(function(){
-			Log.state("*** State Cancel ***", true);
+			Log.state("*** State Cancel ***");
 			t.personal_state[aid] = STATE.NEUTRAL;
+			t.startLocationMoveTimer();
 		}, sec);
 	}
 
@@ -473,32 +479,40 @@ class EmilyState
 
 	// チャンネル間を移動する
 	startLocationMoveTimer() {
+		Log.state("startLocationMoveTimer()");
 		if(this.location_move_timer != null) {
 			clearInterval(this.location_move_timer);
-			Log.state("location_move_timer clear");
 		}
 
 		var t = this;
 		this.location_move_timer = setInterval(function(){
-			let g = t.location.guild;
-			let ch_map = t.location.map[g];
-			do {
-				let i = random(0, ch_map.length);
-				let ch = ch_map[i];
-				if(t.location.channel != ch) {
-					t.location.move(g, ch_map[i]);
-					break;
-				}
-			} while(true);
-
+			t.location.move(ID_TEAROOM);
 			t.refleshActivity();
-		}, 60*60*1000);
+		}, LOCATION_MOVE_INTERVAL);
 	}
 
 	// チャンネル間の移動を中止する
 	stopLocationMoveTimer() {
-		clearInterval(this.location_move_timer);
-		this.location_move_timer = null;
+		Log.state("stopLocationMoveTimer()");
+		if(this.location_move_timer != null) {
+			clearInterval(this.location_move_timer);
+			this.location_move_timer = null;
+		}
+	}
+
+	isMovable() {
+		let result = true;
+		let state = this.getState();
+		if(state == STATE.SINGING
+			|| state == STATE.SLEEPING
+			|| state == STATE.LUNCH_SELECT
+			|| state == STATE.LUNCH_EATING
+			|| this.isTalking() == true
+		) {
+			result = false;
+		}
+		Log.state("isMovable:"+result);
+		return result;
 	}
 
 	refleshActivity() {
@@ -523,6 +537,17 @@ class EmilyState
 		game.name = act;
 		bot.editStatus("online", game);
 		Log.state("activity:" + game.name);
+	}
+
+	// 話し中
+	isTalking()
+	{
+		for(let aid in this.personal_state) {
+			if(this.personal_state[aid] != STATE.NEUTRAL) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -578,6 +603,7 @@ class Lunch
 			if(t.menus.length == 0) {
 				sendMsg(t.channel, ":slightly: ごちそうさまでした。");
 				emily_state.setState(STATE.NEUTRAL);
+				emily_state.startLocationMoveTimer();
 				clearInterval(timer);
 			} else {
 				t.eat();
@@ -685,10 +711,24 @@ class Cron
 				case 7:
 					//calender();
 					break;
+				case 11:
+					// 11:50くらいに他チャンネルにいたら戻る
+					setTimeout(function(){
+						let cid = emily_state.location.channel;
+						let is_talking = emily_state.isTalking();
+						if(cid != ID_SANDBOX && is_talking) {
+							sendMsg(cid, ":blush: あっ、もうすぐお昼ですね。一旦戻りますけど、よかったらご一緒にいかがですか？");
+							emily_state.location.move(ID_TEAROOM, ID_SANDBOX);
+							emily_state.refleshActivity();
+							emily_state.stopLocationMoveTimer(); // 移動しないように一旦タイマーストップ
+						}
+					}, 50*60*1000);
+					break;
 				case 12:
-				emily_state.location.move(ID_TEAROOM, ID_SANDBOX);
-				emily_state.refleshActivity();
-				sendMsg(ID_SANDBOX, ":smile: お昼になりましたね！さあ、昼食に参りましょう♪");
+					emily_state.location.move(ID_TEAROOM, ID_SANDBOX);
+					emily_state.refleshActivity();
+					emily_state.stopLocationMoveTimer();
+					sendMsg(ID_SANDBOX, ":smile: お昼になりましたね！さあ、昼食に参りましょう♪");
 					if(switch_lunch) {
 						setTimeout(function(){
 							lunch.start();
@@ -994,9 +1034,7 @@ try{
 	if(!msg.author.bot &&
 		(msg.channel.id == emily_state.location.channel) // 自分のいるチャンネル
 	) {
-		if(emily_state.location.stay != true) {
-			emily_state.startLocationMoveTimer();	// 自分のいるチャンネルで発言があったら移動タイマーをクリア
-		}
+		emily_state.stopLocationMoveTimer();
 		is_response = true;
 	}
 
@@ -1005,10 +1043,6 @@ try{
 		case STATE.SCHEDULE_INPUT_YESNO:
 		case STATE.SCHEDULE_DELETE:
 			is_response = true;
-			break;
-		case STATE.WAIT_CALL:
-			is_response = true;
-			emily_state.setState(STATE.NEUTRAL, msg.author.id);
 			break;
 		default:
 			break;
@@ -1073,20 +1107,26 @@ try{
 		sendMsgWithTyping(ch_id, res_msg);
 
 	} else if(textFind(msg.content, '(おいで|こっち)')) {
-		if(isCall(msg.content) && msg.channel.type == CH_TYPE.GUILD_TEXT) {
+		if(isCall(msg.content) && msg.channel.type == CH_TYPE.GUILD_TEXT && emily_state.isMovable()) {
+			Log.state("ユーザーの呼び出しによりチャンネルを移動", true);
 			emily_state.location.move(msg.channel.guild.id, msg.channel.id);
 			emily_state.refleshActivity();
 			sendMsgWithTyping(emily_state.location.channel, ":smile: はいっ♪おまたせしました！", 3000);
 			emily_state.setState(STATE.TALKING, aid);
+			emily_state.stopLocationMoveTimer();
 		}
 
 	} else {
 		if(isCall(msg.content) && (rand<30)) {
-			if(msg.channel.id != emily_state.location.channel) {
-				sendMsg(emily_state.location.channel, ":blush: （あら…呼ばれたかしら…）");
+			// ときどき反応
+			if(msg.channel.id == emily_state.location.channel) {
+				// 同じチャンネルなら会話をはじめる
+				sendMsgWithTyping(msg.channel.id, ":smile: はいっ♪なんでしょう、%nickname%。", 500, aid);
+				emily_state.setState(STATE.TALKING, aid);
+				emily_state.stopLocationMoveTimer();
 			} else {
-				sendMsgWithTyping(msg.channel.id, ":slightly: お呼びでしょうか、%nickname%。", 500, aid);
-				emily_state.setState(STATE.WAIT_CALL, aid);
+				// チャンネルが違うところで呼ばれたら反応だけする
+				sendMsg(emily_state.location.channel, ":blush: （あら…呼ばれたかしら…）");
 			}
 		}
 	}
@@ -1844,6 +1884,7 @@ $switch lunch`;
 			switch_lunch = switch_lunch ? false : true;
 			Log.state(`switch_lunch:${switch_lunch}`, true);
 		} else if(msg == "$test") {
+			cron.per1hour();
 		}
 	}
 }
@@ -2246,6 +2287,7 @@ function resSingPlease(call_msg, res, is_humming=false)
 		sendMsgWithTyping(ch_id, res_msg, 500, aid);
 		return;
 	} else {
+		emily_state.stopLocationMoveTimer(); // 歌ってる間は移動しない
 		emily_state.setState(STATE.SINGING);
 	}
 

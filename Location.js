@@ -22,12 +22,23 @@ var Location = function(bot_, log_) {
 	this.guild = DEFAULT_GUILD;
 	this.channel = DEFAULT_CHANNEL;
 	this.map = new Array();
-	this.stay = false;
 }
 
-Location.prototype.move = function(guild, channel) {
+Location.prototype.move = function(guild, channel=null) {
 	this.guild = guild;
-	this.channel = channel;
+	if(channel != null) {
+		this.channel = channel;
+	} else {
+		do {
+			let i = random(0, this.map[guild].length);
+			let ch = this.map[this.guild][i];
+			if(this.channel != ch) {
+				this.channel = ch;
+				break;
+			}
+		} while(true);
+	}
+	Log.state("ch move:"+this.channel);
 }
 
 Location.prototype.readMap = function(fname) {
@@ -40,6 +51,11 @@ Location.prototype.readMap = function(fname) {
 	}).catch(err => {
 		Log.error(err, true);
 	});
+}
+
+function random(min, max)
+{
+	return Math.floor((Math.random() * max) + min);
 }
 
 module.exports = Location;
