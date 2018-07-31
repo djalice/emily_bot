@@ -1,17 +1,25 @@
 "use strict";
 
 // TOML読み込み関連
+require('dotenv').config();
 const toml = require('toml');
 const {promisify} = require('util');
 const fs = require('fs');
 const readFileSync = promisify(fs.readFile);
 
-// 茶室
-const DEFAULT_GUILD = '407242527389777927';
-const DEFAULT_CHANNEL = '427112710816268299';
-// テストサーバー
-//const DEFAULT_GUILD = '426959115517165579';
-//const DEFAULT_CHANNEL = '426959115517165582';
+const TEST = process.env.TEST;
+var DEFAULT_GUILD = '407242527389777927';
+var DEFAULT_CHANNEL = '427112710816268299';
+
+if(TEST) {
+	//テストサーバー
+	DEFAULT_GUILD = '426959115517165579';
+	DEFAULT_CHANNEL = '426959115517165582';
+} else {
+	// 茶室
+	DEFAULT_GUILD = '407242527389777927';
+	DEFAULT_CHANNEL = '427112710816268299';
+}
 
 var Log;
 var bot;

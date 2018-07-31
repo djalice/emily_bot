@@ -15,11 +15,18 @@ const readFileAsync = promisify(fs.readFile);
 
 const ADMIN_ROLE_NAME = "Admin";
 
-const MY_ID = "427105620957593621";			// 自分のID
-const ID_TEST_GUILD = '426959115517165579';	// テストサーバーのID
-const ID_TEST_CH = '426959115517165582';	// テストサーバーのチャンネルID
-const ID_TEAROOM = "407242527389777927";	// 茶室のサーバーID
-const ID_SANDBOX = '427112710816268299';	// 砂場chID
+const MY_ID = "427105620957593621";		// 自分のID
+const TEST = process.env.TEST;
+var ID_TEAROOM;	// 茶室のサーバーID
+var ID_SANDBOX;	// 砂場chID
+if(TEST) {
+	console.log("*** test mode ***");
+	ID_TEAROOM = "426959115517165579";	// 茶室のサーバーID
+	ID_SANDBOX = '426959115517165582';	// 砂場chID
+} else {
+	ID_TEAROOM = "407242527389777927";	// 茶室のサーバーID
+	ID_SANDBOX = '427112710816268299';	// 砂場chID
+}
 const ID_MATCHA_CH = '415459179524915201';	// 抹茶buzz監視チャンネルID
 const REACTION_FEEL_MATCHA_POWER = 'e_desyu:415856247443685376';// チェック済みの抹茶buzzに付けるリアクション
 
@@ -445,7 +452,12 @@ class EmilyState
 	present(msg) {
 		var gid = ID_TEAROOM;
 		var aid = msg.author.id;
-		var rid = '450320539647737856';
+		var rid;
+		if(TEST) {
+			rid = '449768011960680449';
+		} else {
+			rid = '450320539647737856';
+		}
 		var guild = bot.guilds.find((g)=>{return g.id==gid;});
 		var role = guild.roles.find((r)=>{return r.id==rid;});
 
@@ -1201,8 +1213,10 @@ function sendDM(author, res_msg)
 {
 	FUNCTION_LOG("sendDM() start", 2);
 	author.getDMChannel().then(ch => {
-		bot.createMessage(ch.id, res_msg);
-		PARAM_LOG(res_msg, 0);
+		let msg = replaceEmoji(res_msg);
+		msg = replaceVariant(msg, author.id);
+		bot.createMessage(ch.id, msg);
+		PARAM_LOG(msg, 0);
 	});
 	FUNCTION_LOG("sendDM() end", 2);
 }
@@ -1884,7 +1898,6 @@ $switch lunch`;
 			switch_lunch = switch_lunch ? false : true;
 			Log.state(`switch_lunch:${switch_lunch}`, true);
 		} else if(msg == "$test") {
-			cron.per1hour();
 		}
 	}
 }
@@ -2151,7 +2164,7 @@ function resLovecall(call_msg, res)
 	let aid = call_msg.author.id;
 	sendMsg(call_msg.channel.id, res.msg);
 	let msg = replaceVariant("私も%nickname%のことが、大好きですよ♪\nえへへ…。", call_msg.author.id);
-	sendDM(call_msg.author, msg, aid);
+	sendDM(call_msg.author, msg);
 }
 
 // じゃんけん
