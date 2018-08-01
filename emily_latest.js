@@ -1632,7 +1632,7 @@ function playAlone()
 
 	let msg = new Object();
 	msg.channel = new Object();
-	msg.channel.id = ID_SANDBOX;
+	msg.channel.id = emily_state.location.channel;
 	resSingPlease(msg, null, true);
 	emily_state.setPlayAloneTimer();
 	FUNCTION_LOG("playAlone() end");
