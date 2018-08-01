@@ -1160,7 +1160,16 @@ bot.connect();
 bot.on("messageReactionAdd", (msg, emoji, uid) => {
 	if(emily_state.getState() == STATE.LUNCH_SELECT && msg.id == lunch.select_menu_msg_id) {
 		// メニュー決めのメッセージについたら献立に追加
-		lunch.addMenu(emoji);
+		// 追加できるのは食べ物リスト内のドリンク以外
+		if(Object.keys(foods).find((food)=>{return food == emoji.name;})) {
+			switch(foods[emoji.name][1]) {
+				case 'main':
+				case 'sub':
+				case 'sweet':
+					lunch.addMenu(emoji);
+					break;
+			}
+		}
 	}
 
 	if(emily_state.getState() == STATE.LUNCH_EATING) {
@@ -1174,13 +1183,16 @@ bot.on("messageReactionAdd", (msg, emoji, uid) => {
 						break;
 					case 'alcohol': // アルコールは飲めないのでお返し
 						sendMsgWithTyping(lunch.channel, `<@${uid}> :smile: ふふっ…私が成人したら、ご一緒していただけますか？`);
-						// すぐ突き返すのではなくてそっと
-						//setTimeout(function(){
-						//	msg.removeReaction(emoji.name, uid);
-						//}, 3000);
 						break;
 					default:
 						// 飲み物以外はちょっと食べさせてもらう
+						let msg;
+						if(user_note[uid].affection < 500) {
+							msg = `<@${uid}> :smile: ひと口いただけるのですか？ありがとうございます！…おいしいです～♪`;
+						} else {
+							msg = `<@${uid}> :desyu: ひと口いただけるのですか？えっと…あーん♪…えへへ、おいしいでしゅ♪`;
+						}
+						sendMsgWithTyping(lunch.channel, msg);
 						break;
 				}
 			}
@@ -1898,6 +1910,7 @@ $switch lunch`;
 			switch_lunch = switch_lunch ? false : true;
 			Log.state(`switch_lunch:${switch_lunch}`, true);
 		} else if(msg == "$test") {
+			lunch.start();
 		}
 	}
 }
