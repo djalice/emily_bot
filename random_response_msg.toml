@@ -214,7 +214,7 @@
 	{ res = "func側で処理", prob = 1, func = "resCountServerMember" }
 ]
 
-"(どこ|知らない？|見なかった？|見てない？)" = [
+"(どこ.*？|知らない？|見なかった？|見てない？)" = [
 	{ res = "func側で処理", prob = 1, func = "resWhereIdol" }
 ]
 
@@ -265,4 +265,8 @@
 
 "お知らせを見せて" = [
 	{ res = "func側で処理", prob = 1, func = "resShowAnnounce" }
+]
+
+"test" = [
+	{ res=":smile: %nickname%[1000] %mention%[1000] です[1000] よー♪", prob=1, type="scroll"}
 ]
