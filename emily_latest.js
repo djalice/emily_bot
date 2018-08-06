@@ -4,6 +4,8 @@ const PrivateChannel = require("eris/lib/structures/PrivateChannel");
 const Role = require("eris/lib/structures/Role");
 const Log = require("./Log.js");
 const Location = require("./Location.js");
+const ScrollMessage = require("./ScrollMessage.js");
+const createScrollMessage = ScrollMessage.createScrollMessage;
 var bot = new Eris(process.env.BOT_KEY);
 
 // TOML読み込み関連
@@ -157,6 +159,12 @@ class ResponseMessage
 				this.sleep = Boolean(data['sleep']);
 			} else {
 				this.sleep = false;
+			}
+
+			if (typeof data['type'] !== "undefined") {
+				this.type = data['type'];
+			} else {
+				this.type = 'plane';
 			}
 
 			FUNCTION_LOG("ResponseMessage constructor() end", 10);
@@ -375,7 +383,7 @@ class EmilyState
 		if(aid != null) {
 			this.personal_state[aid] = s;
 			this.stateCancelTimer(aid);
-			Log.state(`状態を設定しました(${s}, ${aid})`, true);
+			Log.state(`状態を設定しました(${s}, ${aid})`);
 		} else {
 			this.prev_state = this._state;
 			this.state = s;
@@ -634,7 +642,7 @@ class Lunch
 				Log.state(`${meal.name}を食べました`, true);
 				t.eat_msg_ids.push(msg.id);
 			});
-		}, 10000);
+		}, EAT_INTERVAL);
 	}
 }
 
@@ -946,9 +954,6 @@ var VISUAL_LESSON_MSG;
 
 // Sing機能のヘルプメッセージ
 var VOCAL_LESSON_MSG;
-
-// ステータスをオフラインにしてコールしたときのレスポンス
-var status_offline_msg = new Array();
 
 var music_lib = new MusicLib();
 
@@ -1560,12 +1565,6 @@ function isCall(text)
 }
 
 
-function isSingCall(text)
-{
-	let regexp = new RegExp('♪', 'g');
-	return regexp.test(text);
-}
-
 function getChannelID(msg)
 {
 	if(msg.channel.constructor === PrivateChannel) {
@@ -1575,57 +1574,14 @@ function getChannelID(msg)
 	}
 }
 
-// 歌う
-function sing(in_lyric)
-{
-	let res_start_pos = 0;
-	let phrase_count = 0;
-	let res_msg = "";
-
-	// 最初にスペースとか余分なものを削除したい
-	// なくてもいいかな
-//    in_lyric = in_lyric.split(/(\s*|　*)/);
-	for(i=0; i<search_lyric_data.length; ++i) {
-		search_phrase = search_lyric_data[i];
-		let regexp = new RegExp(search_phrase);
-		//console.log("regexp="+regexp);
-		// マッチングするフレーズがあるかどうかチェック
-		if(regexp.test(in_lyric)) {
-			// 見つかった
-			in_lyric = in_lyric.replace(regexp, "");    // 見つかった分を削除して、フレーズを見つけていく
-			res_start_pos = i+1;                        // 見つかったフレーズの次が続けて歌うフレーズのインデックス
-			phrase_count += 1;                          // 何フレーズ歌ったかカウント
-		} else {
-		}
-	}
-
-	// 歌いきってるかどうか
-	if(res_start_pos < res_lyric_data.length) {
-		// 続きがある
-		console.log(`res_start=${res_lyric_data[res_start_pos]} phrase_count=${phrase_count}`);
-		for(i=res_start_pos,j=0; i<res_lyric_data.length && j<phrase_count; ++i,++j){
-			res_msg += res_lyric_data[i] + "\n";
-		}
-		
-		// レスポンスの最初に♪をつけるが、歌うところがないときはつけない
-		if(res_msg != "") {
-			res_msg = ':singing: ♪' + res_msg;
-		}
-		console.log("res_msg="+res_msg);
-	} else {
-		// 歌いきった
-		res_msg = ":smile: ぱちぱちぱち";
-	}
-
-	return res_msg;
-}
-
 
 function playAlone()
 {
 	FUNCTION_LOG("playAlone() start");
 
-	if(emily_state.getState() == STATE.SLEEPING) {
+	if(emily_state.getState() == STATE.SLEEPING
+		|| emily_state.getState() == STATE.LUNCH_SELECT
+		|| emily_state.getState() == STATE.LUNCH_EATING) {
 		// 寝ているときは一人遊びをしない
 		return;
 	}
@@ -1842,10 +1798,8 @@ function readLyric()
 	readFileAsync("lyric.toml")
 	.then(obj => {
 		data = toml.parse(obj); // TOMLパーズ
-		//console.log(data);
 		for(i=0; i<data.search_lyric_data.length; ++i) {
 			search_lyric_data[i] = data.search_lyric_data[i];
-			//LOG(search_lyric_data[i]);
 		}
 
 		for(i=0; i<data.res_lyric_data.length; ++i) {
@@ -1910,7 +1864,6 @@ $switch lunch`;
 			switch_lunch = switch_lunch ? false : true;
 			Log.state(`switch_lunch:${switch_lunch}`, true);
 		} else if(msg == "$test") {
-			lunch.start();
 		}
 	}
 }
@@ -2010,7 +1963,6 @@ ${note}
 				} else {
 					sendMsg(cid, ":thinking: すみません、あいにく帳面がいっぱいで…どれかを消すことはできますか？", 50);
 					sendMsg(cid, getScheduleList(msg));
-					//emily_state.setState(STATE.SCHEDULE_CHECK, aid);
 				}
 				return true;
 
@@ -2019,7 +1971,6 @@ ${note}
 				let list = getScheduleList(msg);
 				list += ":slightly: ……ですね。";
 				sendMsgWithTyping(cid, list, 3000);
-				//emily_state.setState(STATE.SCHEDULE_CHECK, aid);
 				return true;
 			} else if(textFind(text, "エミリー.*予定.*消したい")) {
 				sendMsgWithTyping(cid, ":slightly: わかりました。何番目でしょうか？ `X番目を消して/やっぱりいい`", 50);
@@ -2167,14 +2118,18 @@ function defaultSendMsg(call_msg, res)
 	FUNCTION_LOG("arg->" + res);
 
 	let aid = call_msg.author.id;
-	sendMsgWithTyping(call_msg.channel.id, res.msg, 500, aid);
+	if(res.type == 'scroll') {
+		let msg = replaceVariant(replaceEmoji(res.msg), aid);
+		createScrollMessage(bot, call_msg.channel.id, msg, null);
+	} else {
+		sendMsgWithTyping(call_msg.channel.id, res.msg, 500, aid);
+	}
 	FUNCTION_LOG("defaultSendMsg() end");
 }
 
 // 愛を囁かれたときの反応
 function resLovecall(call_msg, res)
 {
-	let aid = call_msg.author.id;
 	sendMsg(call_msg.channel.id, res.msg);
 	let msg = replaceVariant("私も%nickname%のことが、大好きですよ♪\nえへへ…。", call_msg.author.id);
 	sendDM(call_msg.author, msg);
