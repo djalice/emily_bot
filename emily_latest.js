@@ -2542,15 +2542,18 @@ function feelMatchaPower(cid, embed_target)
 function resCatLanguage(call_msg, res)
 {
 	let cid = call_msg.channel.id;
-	sendMsg(cid, ":smile: にゃあ、にゃあ♪\n:blush: …なんて、えへへ……")
-	.then((msg)=>{
-		setTimeout(()=>{
-			msg.delete("resCatLanguage")
-			.then(()=>{
-				sendMsg(cid, ":thinking: ……%nickname%は何も見ていません…いいですね？", call_msg.author.id);
-			});
-		}, 4000);
-	});
+	bot.sendChannelTyping(cid);
+	setTimeout(()=>{
+		sendMsg(cid, ":smile: にゃあ、にゃあ♪\n:blush: …なんて、えへへ……")
+		.then((msg)=>{
+			setTimeout(()=>{
+				msg.delete("resCatLanguage")
+				.then(()=>{
+					sendMsg(cid, ":neutoral: ……%nickname%は何も見ていません…いいですね？", call_msg.author.id);
+				});
+			}, 4000);
+		});
+	}, 2000);
 }
 // ↑↑↑ここに固有処理を追加していく
 /////////////////////////////////////////////////////////////////////////////////////
