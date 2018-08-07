@@ -837,7 +837,7 @@ var user_note = new Array();
 
 // 茶室の固有絵文字変換テーブル
 const emoji = {
-	':newtoral:' : '<:e_neutoral_face_large:415889765586698240>',
+	':neutoral:' : '<:e_neutoral_face_large:415889765586698240>',
 	':smile:' : '<:e_smile_large:415889131055480856>',
 	':thinking:' : '<:e_thinking_large:415860618424221706>',
 	':blush:' : '<:e_blush_large:415889131462197248>',
@@ -1893,7 +1893,7 @@ function scheduleManager(msg)
 					'note' : note,
 					'channel' : cid
 				};
-				sendMsgWithTyping(cid, ":newtoral: えっと……（かきかき）", 50);
+				sendMsgWithTyping(cid, ":neutoral: えっと……（かきかき）", 50);
 				let res_msg = `\`\`\`
 ${month}/${day} ${hour}時
 ${note}
@@ -2195,7 +2195,7 @@ function resComfort(call_msg, res)
 	FUNCTION_LOG("resComfort() start");
 	let ch_id = getChannelID(call_msg);
 
-	sendMsg(ch_id, ":newtoral: …！");
+	sendMsg(ch_id, ":neutoral: …！");
 	sendMsg(ch_id, "てててて…");
 	sendMsg(ch_id, ":blush: （こしょこしょ…）");
 
