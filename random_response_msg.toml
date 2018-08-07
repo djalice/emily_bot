@@ -267,6 +267,10 @@
 	{ res = "func側で処理", prob = 1, func = "resShowAnnounce" }
 ]
 
+"エミリー.*猫語をインストールして" = [
+	{ res="", prob=1, func="resCatLanguage", unlock_affection=200 }
+]
+
 "test" = [
 	{ res=":smile: %nickname%[1000] %mention%[1000] です[1000] よー♪", prob=1, type="scroll"}
 ]
