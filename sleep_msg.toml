@@ -12,5 +12,5 @@ sleeping = [
 
 sleepout = [
     { res = ":blush: ん…おはようございましゅ…", prob = 20 },
-    { res = ":newtoral: いけません、仕掛け人さま！その小籠包を食べて……は……\n:blush: お、おはようございます…", prob = 20 }
+    { res = ":neutoral: いけません、仕掛け人さま！その小籠包を食べて……は……\n:blush: お、おはようございます…", prob = 20 }
 ]
