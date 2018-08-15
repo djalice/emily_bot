@@ -1095,7 +1095,7 @@ try{
 			sendMsgWithTyping(ch_id, res_msg);
 		} else {
 			// 呼びかけに対する応答がなかった
-			if(rand < 30) {
+			if(isCall(msg.content) && rand < 30) {
 				sendMsgWithTyping(msg.channel.id, ":smile: はいっ♪なんでしょう、%nickname%。", 500, aid);
 				emily_state.setState(STATE.TALKING, aid);
 				emily_state.stopLocationMoveTimer();
@@ -2349,7 +2349,7 @@ function resSetTimer(call_msg, res)
 
 	let ch_id = getChannelID(call_msg);
 	let msec = min * 60 * 1000;
-	sendMsg(ch_id, ":slightly: わかりました。では" + min + "分経ったら教えますね");
+	sendMsg(ch_id, ":slightly: わかりました。では、お時間になりましたらお伝えしますね。");
 	Log.state("set timer after " + msec);
 
 	setTimeout(function () {
