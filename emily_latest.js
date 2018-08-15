@@ -36,7 +36,7 @@ const CALL_NAME = "エミリー";				// いわゆるプレフィックス
 
 const STATE_CANCEL_TIME = 3* 60 * 1000;	// ユーザー毎の状態をクリアするまでの時間
 const LOCATION_MOVE_INTERVAL = 45* 60*1000;
-const SELECT_MENU_INTERVAL = 3 * 60 * 1000;	// 食事のメニューを選ぶ間隔
+const SELECT_MENU_INTERVAL = 5 * 60 * 1000;	// 食事のメニューを選ぶ間隔
 const EAT_INTERVAL = 10 * 60 * 1000;		// 食事を食べる間隔
 
 // チャンネルのタイプ
@@ -1020,129 +1020,103 @@ bot.on("messageCreate", (msg) => {
 try{
 	if(msg.author.bot) {
 		FUNCTION_LOG("Emily on() messageCreate start", 2);
+		return;
 	} else {
 		FUNCTION_LOG("on() messageCreate start", 2);
 	}
 	let ch_id = msg.channel.id;
-	let is_response = false;
 	let rand = random(0, 100);
 
 	if(msg.content[0] == '$') {
 		command(msg);
+		return;
 	}
 
 	if(msg.author.id == MY_ID) {
 		return;
 	}
 
-	if(isCall(msg.content)) {
-		is_response = true;
-	}
-
 	// ここから下はエミリーの見える範囲で誰かが喋っている
 	emily_state.setPlayAloneTimer();
 
-	// DMを投げたときの反応
-	if(!msg.author.bot && (msg.channel.constructor === PrivateChannel)) {
-		Log.state("private channel id=" + msg.author.id, true);
-		ch_id = msg.author; // sendMsgを流用するため、情報を置き換える
-		is_response = true;
-	}
-	
-	if(!msg.author.bot &&
-		(msg.channel.id == emily_state.location.channel) // 自分のいるチャンネル
-	) {
-		emily_state.stopLocationMoveTimer();
-		is_response = true;
-	}
-
-	switch(emily_state.getState(msg.author.id)) {
-		case STATE.SCHEDULE_INPUT_READY:
-		case STATE.SCHEDULE_INPUT_YESNO:
-		case STATE.SCHEDULE_DELETE:
-			is_response = true;
-			break;
-		default:
-			break;
-	}
-
-/*    if(!msg.author.bot && isSingCall(msg_text)) {
-		// うまく歌えるかな？
-		res_msg = sing(msg_text);
-		sendMsg(ch_id, res_msg);
-		return;
-	}*/
-
 	// ブロックコード内は削除して読まないようにする
 	msg.content = msg.content.replace(/```(.|\n)*```/g, "");
-
-	// 相手がbotか、反応する条件にマッチしていないときは処理を終わる
-	if(msg.author.bot || !is_response) {
-		return;
-	}
 
 	let aid = msg.author.id;
 	let res_msg;
 
 	// UserNoteがまだ作られていなかったら作成する
-	Log.state("user_note="+user_note[aid]);
 	if(user_note[aid] == undefined) {
 		Log.state("New UserNote create");
 		user_note[aid] = new UserNote(aid);
 		user_note[aid].writeToml();
 	}
 
-	// スケジュール管理
-	// 状態による振り分けは中でやる
-	if(scheduleManager(msg) == true) {
-		// スケジュール管理中のときは残りの処理はやらない
-		return;
+	// DMを投げたときの反応
+	if(!msg.author.bot && (msg.channel.constructor === PrivateChannel)) {
+		Log.state("private channel id=" + msg.author.id, true);
+		ch_id = msg.author; // sendMsgを流用するため、情報を置き換える
+		is_response = true;
+
+		// スケジュール管理（DM専用）
+		// 状態による振り分けは中でやる
+		if(scheduleManager(msg) == true) {
+			// スケジュール管理中のときは残りの処理はやらない
+			return;
+		}
 	}
 
-	if((res_msg = randomResponse(msg, random_res_msg)) != null) {
-		if(emily_state.getState() == STATE.SLEEPING) {
-			// 寝てるときはちょっと間をおいて喋る
-			sendMsgWithTyping(ch_id, res_msg.msg, 2000, aid);
-		} else {
-			// ランダム定型文を探して、あれば返答
-			res_msg.funcFire(msg);
-			emily_state.setState(STATE.TALKING, aid);
+	if(msg.channel.id == emily_state.location.channel) {
+		// エミリーとユーザーが同じチャンネル内にいるときの反応
+		if((res_msg = randomResponse(msg, random_res_msg)) != null) {
+			if(emily_state.getState() == STATE.SLEEPING) {
+				// 寝てるときはちょっと間をおいて喋る
+				sendMsgWithTyping(ch_id, res_msg.msg, 2000, aid);
+			} else {
+				// ランダム定型文を探して、あれば返答
+				res_msg.funcFire(msg);
+				emily_state.setState(STATE.TALKING, aid);
+				emily_state.stopLocationMoveTimer();
 
-			// 親愛度100区切りでプレゼントを贈る
-			if(isAffectionOverPeriod(aid) == true) {
-				emily_state.present(msg);
+				// 親愛度100区切りでプレゼントを贈る
+				if(isAffectionOverPeriod(aid) == true) {
+					emily_state.present(msg);
+				}
 			}
-		}
-	} else if(textFind(msg.content, '(ビジュアル|表現力)レッスン')) {
-		sendMsg(ch_id, VISUAL_LESSON_MSG, aid);
+		} else if(textFind(msg.content, '(ビジュアル|表現力)レッスン')) {
+			sendMsg(ch_id, VISUAL_LESSON_MSG, aid);
 
-	} else if(textFind(msg.content, '(ボーカル|歌詞)レッスン')) {
-		sendMsg(ch_id, VOCAL_LESSON_MSG, aid);
-				
-	} else if(textFind(msg.content, '<.*>.*ID.*教えて')) {
-		id = msg.content.match(/<(.*)>/);
-		res_msg = `:slightly: ${id[1]} だそうですよ。お役に立てましたか？`;
-		sendMsgWithTyping(ch_id, res_msg);
-
-	} else if(textFind(msg.content, '(おいで|こっち)')) {
-		if(isCall(msg.content) && msg.channel.type == CH_TYPE.GUILD_TEXT && emily_state.isMovable()) {
-			Log.state("ユーザーの呼び出しによりチャンネルを移動", true);
-			emily_state.location.move(msg.channel.guild.id, msg.channel.id);
-			emily_state.refleshActivity();
-			sendMsgWithTyping(emily_state.location.channel, ":smile: はいっ♪おまたせしました！", 3000);
-			emily_state.setState(STATE.TALKING, aid);
-			emily_state.stopLocationMoveTimer();
-		}
-
-	} else {
-		if(isCall(msg.content) && (rand<30)) {
-			// ときどき反応
-			if(msg.channel.id == emily_state.location.channel) {
-				// 同じチャンネルなら会話をはじめる
+		} else if(textFind(msg.content, '(ボーカル|歌詞)レッスン')) {
+			sendMsg(ch_id, VOCAL_LESSON_MSG, aid);
+					
+		} else if(textFind(msg.content, '<.*>.*ID.*教えて')) {
+			id = msg.content.match(/<(.*)>/);
+			res_msg = `:slightly: ${id[1]} だそうですよ。お役に立てましたか？`;
+			sendMsgWithTyping(ch_id, res_msg);
+		} else {
+			// 呼びかけに対する応答がなかった
+			if(rand < 30) {
 				sendMsgWithTyping(msg.channel.id, ":smile: はいっ♪なんでしょう、%nickname%。", 500, aid);
 				emily_state.setState(STATE.TALKING, aid);
 				emily_state.stopLocationMoveTimer();
-			} else {
+			}
+		}
+	} else {
+		// エミリーとユーザーが別のチャンネルにいるときの反応
+		if(textFind(msg.content, '(おいで|こっち)')) {
+			if(isCall(msg.content) && msg.channel.type == CH_TYPE.GUILD_TEXT && emily_state.isMovable()) {
+				Log.state("ユーザーの呼び出しによりチャンネルを移動", true);
+				emily_state.location.move(msg.channel.guild.id, msg.channel.id);
+				emily_state.refleshActivity();
+				sendMsgWithTyping(emily_state.location.channel, ":smile: はいっ♪おまたせしました！", 3000);
+				emily_state.setState(STATE.TALKING, aid);
+				emily_state.stopLocationMoveTimer();
+			}
+	
+		} else {
+			if(emily_state.getState() != STATE.SLEEPING
+				&& rand<30
+			) {
 				// チャンネルが違うところで呼ばれたら反応だけする
 				sendMsg(emily_state.location.channel, ":blush: （あら…呼ばれたかしら…）");
 			}
@@ -1881,7 +1855,6 @@ function scheduleManager(msg)
 	switch(state) {
 		case STATE.SCHEDULE_INPUT_READY:
 			let d = text.match(/(\d+)月(\d+)日(\d+)時に(.+)/);
-			PARAM_LOG(d);
 			if(d != null) {
 				let month = d[1], day = d[2], hour = d[3], note = d[4];
 				note = note.replace(/[\"'`.*+?^=!:${}()|[\]\/\\]/g, "");
