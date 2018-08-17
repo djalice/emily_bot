@@ -386,7 +386,10 @@ class EmilyState
 	setState(s, aid=null) {
 		if(aid != null) {
 			this.personal_state[aid] = s;
-			this.stateCancelTimer(aid);
+			if(s != STATE.NEUTRAL) {
+				// 何かの状態からNEUTRALに戻ったときはキャンセルタイマーを作動させない
+				this.stateCancelTimer(aid);
+			}
 			Log.state(`状態を設定しました(${s}, ${aid})`);
 		} else {
 			this.prev_state = this._state;
