@@ -72,6 +72,15 @@
 #				ただしスクリプトはメッセージの先頭および末尾にあってはならない。
 #				例）メッセージ１[1000]メッセージ２[500]メッセージ
 #
+#	location="(match | unmatch | any)"
+#		オプション
+#		エミリーの現在位置と発言元のチャンネルの一致不一致で反応するかどうかを指定する
+#		ただしDMは指定によらず全て反応する
+#		デフォルトはmatch
+#		match	チャンネルが一致しているときのみ反応
+#		unmatch	チャンネルが一致していないときのみ反応
+#		any		チャンネルによらず常に反応
+#
 
 "(にらめっこ|笑うと負けよ)" = [
 	{ res = ":daruma: あっぷっぷ！", prob = 1, func="resNiramekko", affection = 2 },
@@ -116,14 +125,18 @@
 ]
 
 "(なに|何)が(でき|出来)る" = [
-	{ res = ":slightly: ご挨拶ができます。朝起きたとき、お仕事に行かれるときなどにお声かけくださいね。", prob = 10 },
-	{ res = ":slightly: この茶室にいる人数を答えることができますよ。", prob = 10 },
-	{ res = ":smile: にらめっこで遊ぶことができますよ。実は、にらめっこには自信があるんです！", prob = 10 },
-	{ res = ":smile: %nickname%、じゃんけんをしましょう！\n:blush: それで、もし私が勝ったら…ご褒美をくださいませんか？", prob = 10 },
-	{ res = ":slightly: 他の大和撫子をお探しのときは、私に聞いてみてください。もしかしたら知っているかもしれません。", prob = 10 },
-	{ res = ":blush: お、お褒めいただくと、何かしら反応いたします…。", prob = 10 },
-	{ res = ":blush: %stutter_nick%のお気持ちは理解しているつもりですが、女の子は、時には口に出して言っていただきたいものなのですよ…？", prob = 3 },
-	{ res = ":thinking: あ、頭が、急に…かゆくなってしまいました～…(ﾁﾗｯ\n:blush: ちょうど手がふさがっていて…ど、どうしましょう～(ﾁﾗｯﾁﾗｯ", prob = 10 },
+	{ res = ":slightly: ご挨拶ができます。朝起きたとき、お仕事に行かれるときなどにお声かけくださいね。", prob = 10, location="any" },
+	{ res = ":slightly: この茶室にいる人数を答えることができますよ。", prob = 10, location="any" },
+	{ res = ":smile: にらめっこで遊ぶことができますよ。実は、にらめっこには自信があるんです！", prob = 10, location="any" },
+	{ res = ":smile: %nickname%、じゃんけんをしましょう！\n:blush: それで、もし私が勝ったら…ご褒美をくださいませんか？", prob = 10, location="any" },
+	{ res = ":slightly: 他の大和撫子をお探しのときは、私に聞いてみてください。もしかしたら知っているかもしれません。", prob = 10, location="any" },
+	{ res = ":blush: お、お褒めいただくと、何かしら反応いたします…。", prob = 10, location="any" },
+	{ res = ":blush: %stutter_nick%のお気持ちは理解しているつもりですが、女の子は、時には口に出して言っていただきたいものなのですよ…？", prob = 3, location="any" },
+	{ res = ":thinking: あ、頭が、急に…かゆくなってしまいました～…(ﾁﾗｯ\n:blush: ちょうど手がふさがっていて…ど、どうしましょう～(ﾁﾗｯﾁﾗｯ", prob = 10, location="any" },
+]
+
+"(ビジュアル|表現力)レッスン" = [
+	{ res="プログラム内で上書き", prob=1, location="any"}
 ]
 
 "(好|す)きだよ" = [
@@ -283,6 +296,12 @@
 	{ res="", prob=1, func="resCatLanguage", unlock_affection=200 }
 ]
 
+"エミリー.*(おいで|こっち)" = [
+	{ res="func側で処理", prob=1, func="resMoveChannel", affection=3, location="unmatch" }
+]
+
 "test" = [
-	{ res=":smile: %nickname%[1000] %mention%[1000] です[1000] よー♪", prob=1, type="scroll"}
+	{ res="location match", prob=1, location="match"},
+	{ res="location unmatch", prob=1, location="unmatch"},
+	{ res="location any", prob=1, location="any"}
 ]

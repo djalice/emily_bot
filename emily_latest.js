@@ -80,7 +80,8 @@ const func_list = {
 	"resSetAnnounce" : resSetAnnounce,
 	"resDeleteAnnounce" : resDeleteAnnounce,
 	"resShowAnnounce" : resShowAnnounce,
-	"resCatLanguage" : resCatLanguage
+	"resCatLanguage" : resCatLanguage,
+	"resMoveChannel" : resMoveChannel
 };
 /////////////////////////////////////////////////////////////////////////////////////
 class ResponseMessage
@@ -166,6 +167,12 @@ class ResponseMessage
 				this.type = data['type'];
 			} else {
 				this.type = 'plane';
+			}
+
+			if (typeof data['location'] !== "undefined") {
+				this.location = data['location'];
+			} else {
+				this.location = 'match';
 			}
 
 			FUNCTION_LOG("ResponseMessage constructor() end", 10);
@@ -268,35 +275,31 @@ class UserNote
 		let result = false;
 		let data = null;
 	
-		readFileAsync("./UserNote/" + id + ".toml")
-		.then(obj => {
-			data = toml.parse(obj); // TOMLパーズ
-			this.id = data['id'];
-			this.nickname = data['nickname'];
-			this.affection = Number(data['affection']);
-			this.affection_period = Math.floor(this.affection / 100) * 100 + 100;
-			if(typeof data['present_limit'] !== "undefined") {
-				if(data['present_limit'] == "") {
-					this.present_limit = null;
-				} else {
-					this.present_limit = moment(data['present_limit'], ["YYYYMMDD"]);
-				}
-			} else {
+		let obj = fs.readFileSync("./UserNote/" + id + ".toml", 'utf-8')
+		data = toml.parse(obj); // TOMLパーズ
+		this.id = data['id'];
+		this.nickname = data['nickname'];
+		this.affection = Number(data['affection']);
+		this.affection_period = Math.floor(this.affection / 100) * 100 + 100;
+		if(typeof data['present_limit'] !== "undefined") {
+			if(data['present_limit'] == "") {
 				this.present_limit = null;
+			} else {
+				this.present_limit = moment(data['present_limit'], ["YYYYMMDD"]);
 			}
+		} else {
+			this.present_limit = null;
+		}
 
-			for(let schedule of data['schedule']) {
-				let details = new Array();
-				for(let key in schedule) {
-					details[key] = schedule[key];
-				}
-				this.schedule.push(details);
+		for(let schedule of data['schedule']) {
+			let details = new Array();
+			for(let key in schedule) {
+				details[key] = schedule[key];
 			}
-			PARAM_LOG(this, 99);
-			result = true;
-		}).catch(err => {
-			PARAM_LOG(err, 0);
-		});
+			this.schedule.push(details);
+		}
+		PARAM_LOG(this, 99);
+		result = true;
 	
 		FUNCTION_LOG("readToml() end", 5);
 		return result;
@@ -389,8 +392,8 @@ class EmilyState
 			this.prev_state = this._state;
 			this.state = s;
 			Log.state(`状態を設定しました(${s})`);
-			this.refleshActivity();
 		}
+		this.refleshActivity();
 	}
 
 	getState(aid=null) {
@@ -452,7 +455,7 @@ class EmilyState
 		}
 		this.state_cancel_timer[aid] = setTimeout(function(){
 			Log.state("*** State Cancel ***");
-			t.personal_state[aid] = STATE.NEUTRAL;
+			t.setState(STATE.NEUTRAL, aid);
 			t.startLocationMoveTimer();
 		}, sec);
 	}
@@ -541,7 +544,11 @@ class EmilyState
 		let act = "";
 		switch(this.getState()) {
 			case STATE.NEUTRAL:
-				act = ch.name + "にいます";
+				if(this.isTalking()) {
+					act = ch.name + "でお話中です";
+				} else {
+					act = ch.name + "にいます";
+				}
 				break;
 			case STATE.LUNCH_SELECT:
 			case STATE.LUNCH_EATING:
@@ -1052,11 +1059,10 @@ try{
 		user_note[aid].writeToml();
 	}
 
-	// DMを投げたときの反応
-	if(!msg.author.bot && (msg.channel.constructor === PrivateChannel)) {
+	// DMを投げたときの前処理
+	if(!msg.author.bot && (msg.channel.type == CH_TYPE.DM)) {
 		Log.state("private channel id=" + msg.author.id, true);
 		ch_id = msg.author; // sendMsgを流用するため、情報を置き換える
-		is_response = true;
 
 		// スケジュール管理（DM専用）
 		// 状態による振り分けは中でやる
@@ -1066,55 +1072,37 @@ try{
 		}
 	}
 
-	if(msg.channel.id == emily_state.location.channel) {
-		// エミリーとユーザーが同じチャンネル内にいるときの反応
-		if((res_msg = randomResponse(msg, random_res_msg)) != null) {
-			if(emily_state.getState() == STATE.SLEEPING) {
-				// 寝てるときはちょっと間をおいて喋る
-				sendMsgWithTyping(ch_id, res_msg.msg, 2000, aid);
-			} else {
-				// ランダム定型文を探して、あれば返答
-				res_msg.funcFire(msg);
-				emily_state.setState(STATE.TALKING, aid);
-				emily_state.stopLocationMoveTimer();
-
-				// 親愛度100区切りでプレゼントを贈る
-				if(isAffectionOverPeriod(aid) == true) {
-					emily_state.present(msg);
-				}
-			}
-		} else if(textFind(msg.content, '(ビジュアル|表現力)レッスン')) {
-			sendMsg(ch_id, VISUAL_LESSON_MSG, aid);
-
-		} else if(textFind(msg.content, '(ボーカル|歌詞)レッスン')) {
-			sendMsg(ch_id, VOCAL_LESSON_MSG, aid);
-					
-		} else if(textFind(msg.content, '<.*>.*ID.*教えて')) {
-			id = msg.content.match(/<(.*)>/);
-			res_msg = `:slightly: ${id[1]} だそうですよ。お役に立てましたか？`;
-			sendMsgWithTyping(ch_id, res_msg);
+	if((res_msg = randomResponse(msg, random_res_msg)) != null) {
+		if(emily_state.getState() == STATE.SLEEPING) {
+			// 寝てるときはちょっと間をおいて喋る
+			sendMsgWithTyping(ch_id, res_msg.msg, 2000, aid);
 		} else {
-			// 呼びかけに対する応答がなかった
-			if(isCall(msg.content) && rand < 30) {
-				sendMsgWithTyping(msg.channel.id, ":smile: はいっ♪なんでしょう、%nickname%。", 500, aid);
+			// ランダム定型文を探して、あれば返答
+			res_msg.funcFire(msg);
+			if(msg.channel.type == CH_TYPE.GUILD_TEXT && res_msg.location != 'any') {
 				emily_state.setState(STATE.TALKING, aid);
 				emily_state.stopLocationMoveTimer();
+			}
+			// 親愛度100区切りでプレゼントを贈る
+			if(isAffectionOverPeriod(aid) == true) {
+				emily_state.present(msg);
 			}
 		}
 	} else {
-		// エミリーとユーザーが別のチャンネルにいるときの反応
-		if(textFind(msg.content, '(おいで|こっち)')) {
-			if(isCall(msg.content) && msg.channel.type == CH_TYPE.GUILD_TEXT && emily_state.isMovable()) {
-				Log.state("ユーザーの呼び出しによりチャンネルを移動", true);
-				emily_state.location.move(msg.channel.guild.id, msg.channel.id);
-				emily_state.refleshActivity();
-				sendMsgWithTyping(emily_state.location.channel, ":smile: はいっ♪おまたせしました！", 3000);
-				emily_state.setState(STATE.TALKING, aid);
-				emily_state.stopLocationMoveTimer();
+		// 呼びかけに対する応答がなかった
+		if(msg.channel.id == emily_state.location.channel) {
+			// 同チャンネル
+			if(isCall(msg.content) && rand < 30) {
+				sendMsgWithTyping(msg.channel.id, ":smile: はいっ♪なんでしょう、%nickname%。", 500, aid);
+				if(msg.channel.type == CH_TYPE.GUILD_TEXT) {
+					emily_state.setState(STATE.TALKING, aid);
+					emily_state.stopLocationMoveTimer();
+				}
 			}
-	
 		} else {
+			// エミリーとユーザーが別のチャンネルにいるときの反応
 			if(emily_state.getState() != STATE.SLEEPING
+				&& isCall(msg.content)
 				&& rand<30
 			) {
 				// チャンネルが違うところで呼ばれたら反応だけする
@@ -1376,8 +1364,13 @@ function randomResponse(call_msg, callMap)
 			PARAM_LOG(index);
 			let resMap = null;
 			let isSleep = (emily_state.getState() == STATE.SLEEPING);
+			let isLocationMatch =
+				(call_msg.channel.type == CH_TYPE.DM) ||
+				(call_msg.channel.id == emily_state.location.channel);
 
 			resMap = responseFilterSleep(callMap[index], isSleep);
+			// 新たにフィルターを追加するときはこの下に配置
+			resMap = responseFilterLocation(resMap, isLocationMatch);
 			resMap = responseFilterMessageType(call_msg, resMap);
 			resMap = responseFilterAffection(resMap, user_note[call_msg.author.id]);
 
@@ -1470,6 +1463,37 @@ function responseFilterSleep(resMap, bool)
 	for(let res of resMap) {
 		if(res.sleep == bool) {
 			result.push(res);
+		}
+	}
+
+	return result.length != 0 ? result : null;
+}
+
+/**
+ * エミリーの居場所と発言元チャンネルが一致しているかどうかでフィルターをかける
+ * @param {ResponseMap[]} resMap 
+ * @param {Boolean} loc_match 
+ * @returns {ResponseMessage[] | null}
+ */
+function responseFilterLocation(resMap, loc_match)
+{
+	let result = new Array();
+	for(let res of resMap) {
+		switch(res.location) {
+		case 'unmatch':
+			if(loc_match == false) {
+				result.push(res);
+			}
+			break;
+		case 'any':
+			result.push(res);
+			break;
+		case 'match':
+		default:
+			if(loc_match == true) {
+				result.push(res);
+			}
+			break;
 		}
 	}
 
@@ -1644,29 +1668,29 @@ function readRandomResponseMessage(filename)
 	FUNCTION_LOG("filename->" + filename);
 	let data = null;
 	let callMap = new Array();
+	let call_count = 0;
+	let res_count = 0;
 
-	readFileAsync(filename)
-	.then(obj => {
-		data = toml.parse(obj); // TOMLパーズ
-		for(call_msg in data) {
-			PARAM_LOG(call_msg, 9);
-			// 各コールに対してのループ
-			callMap[call_msg] = new Array(); // 1コールに対するレスポンス配列のメモリを確保
-			let resMap = new Array();               // レスポンス配列のメモリを確保
+	let obj = fs.readFileSync(filename, 'utf-8')
+	data = toml.parse(obj); // TOMLパーズ
+	for(call_msg in data) {
+		call_count += 1;
+		PARAM_LOG(call_msg, 9);
+		// 各コールに対してのループ
+		callMap[call_msg] = new Array(); // 1コールに対するレスポンス配列のメモリを確保
+		let resMap = new Array();               // レスポンス配列のメモリを確保
 
-			for(res_data of data[call_msg]) {
-				// 1コールに対するレスポンスを全て読み込む
-				res = new ResponseMessage(res_data);
-				PARAM_LOG(res.msg, 9);
-				resMap.push(res);
-			}
-			callMap[call_msg] = resMap; // 1コールに対するレスポンスマップを設定
+		for(res_data of data[call_msg]) {
+			res_count += 1;
+			// 1コールに対するレスポンスを全て読み込む
+			res = new ResponseMessage(res_data);
+			PARAM_LOG(res.msg, 9);
+			resMap.push(res);
 		}
+		callMap[call_msg] = resMap; // 1コールに対するレスポンスマップを設定
+	}
 
-	}).catch(err => {
-		PARAM_LOG(err, 0);
-	});
-
+	Log.state(`${filename} ${call_count} calls ${res_count} responses read`, true);
 	FUNCTION_LOG("readRandomResponseMessage() end");
 	return callMap;
 }
@@ -1678,18 +1702,14 @@ function readGeneralMessage()
 	let result = false;
 	let data = null;
 
-	readFileAsync("general_msg.toml")
-	.then(obj => {
-		data = toml.parse(obj); // TOMLパーズ
+	let obj = fs.readFileSync("general_msg.toml", 'utf-8')
+	data = toml.parse(obj); // TOMLパーズ
 
-		VISUAL_LESSON_MSG = data['visual_lesson_msg'];
-		VOCAL_LESSON_MSG = data['vocal_lesson_msg'];
-		WHERE_IDOL_NOT_FOUND_MSG = data['where_idol_not_found_msg'];
+	VISUAL_LESSON_MSG = data['visual_lesson_msg'];
+	VOCAL_LESSON_MSG = data['vocal_lesson_msg'];
+	WHERE_IDOL_NOT_FOUND_MSG = data['where_idol_not_found_msg'];
 
-		result = true;
-	}).catch(err => {
-		PARAM_LOG(err, 0);
-	});
+	result = true;
 
 	FUNCTION_LOG("readGeneralMessage() end");
 	return result;
@@ -1703,35 +1723,32 @@ function readMusic()
 	let music;
 	let dir = './music/';
 	let path = "";
+	let file_count = 0;
 
 	music_lib.clear();
 	fs.readdir(dir, function(err, files){
-		console.dir(files);
 		// ディレクトリ内のファイル毎に対して
 		for(file of files) {
-			PARAM_LOG(file);
+			file_count += 1;
 			path = dir + file;
-			readFileAsync(path)
-			.then(obj => {
-				data = toml.parse(obj); // TOMLパーズ
-				let humming;
-				if(typeof data['humming'] !== "undefined") {
-					humming = data['humming'];
-				} else {
-					humming = null;
-				}
-				music = new Music(
-					data['title'],
-					data['artist'],
-					data['lyrics'],
-					humming);
-				music_lib.add(music);
-				result = true;
-			}).catch(err => {
-				PARAM_LOG(err, 0);
-			});
-		}        
-	})
+			let obj = fs.readFileSync(path, 'utf-8')
+			data = toml.parse(obj); // TOMLパーズ
+			let humming;
+			if(typeof data['humming'] !== "undefined") {
+				humming = data['humming'];
+			} else {
+				humming = null;
+			}
+			music = new Music(
+				data['title'],
+				data['artist'],
+				data['lyrics'],
+				humming);
+			music_lib.add(music);
+			result = true;
+		}
+		Log.state(`${dir} ${file_count} files read`, true);
+	});
 
 	FUNCTION_LOG("readMusic() end");
 	return result;
@@ -1761,45 +1778,16 @@ function readUserNote()
 	return result;
 }
 
-// Sing機能のTOMLデータ読み込み
-function readLyric()
-{
-	FUNCTION_LOG("readLyric() start");
-	let result = false;
-	let data = null;
-	let i;
-	let phrase;
-
-	readFileAsync("lyric.toml")
-	.then(obj => {
-		data = toml.parse(obj); // TOMLパーズ
-		for(i=0; i<data.search_lyric_data.length; ++i) {
-			search_lyric_data[i] = data.search_lyric_data[i];
-		}
-
-		for(i=0; i<data.res_lyric_data.length; ++i) {
-			res_lyric_data[i] = data.res_lyric_data[i];
-		}
-
-		result = true;
-	}).catch(err => {
-		PARAM_LOG(err, 0);
-	});
-
-	FUNCTION_LOG("readLyric() end");
-	return result;
-}
-
 // TOMLファイルの読み込み
 function reloadMessageFile()
 {
 	readGeneralMessage();
 	rps_msg = readRandomResponseMessage("rps_msg.toml");
 	random_res_msg = readRandomResponseMessage("random_response_msg.toml");
+	random_res_msg["(ビジュアル|表現力)レッスン"][0].msg = VISUAL_LESSON_MSG;
 	where_idol_res_msg = readRandomResponseMessage("where_idol_res_msg.toml");
 	status_offline_msg = readRandomResponseMessage("status_offline_msg.toml");
 	sleep_msg = readRandomResponseMessage("sleep_msg.toml");
-	readLyric();
 	readMusic();
 	readUserNote();
 	emily_state.location.readMap("location_map.toml");
@@ -2455,13 +2443,9 @@ function readAnnounce()
 		// ディレクトリ内のファイル毎に対して
 		for(let file of files) {
 			let path = dir + file;
-			readFileAsync(path, 'utf-8')
-			.then(obj => {
-				let hash = file.split(".")[0];
-				announce[hash] = obj;
-			}).catch(err => {
-				PARAM_LOG(err, 0);
-			});
+			let obj = fs.readFileSync(path, 'utf-8')
+			let hash = file.split(".")[0];
+			announce[hash] = obj;
 		}
 	})
 }
@@ -2527,6 +2511,18 @@ function resCatLanguage(call_msg, res)
 			}, 4000);
 		});
 	}, 2000);
+}
+
+function resMoveChannel(call_msg, res)
+{
+	if(isCall(call_msg.content) && call_msg.channel.type == CH_TYPE.GUILD_TEXT && emily_state.isMovable()) {
+		Log.state("ユーザーの呼び出しによりチャンネルを移動", true);
+		emily_state.location.move(call_msg.channel.guild.id, call_msg.channel.id);
+		emily_state.refleshActivity();
+		sendMsgWithTyping(emily_state.location.channel, ":smile: はいっ♪おまたせしました！", 3000);
+		emily_state.setState(STATE.TALKING, call_msg.author.id);
+		emily_state.stopLocationMoveTimer();
+	}
 }
 // ↑↑↑ここに固有処理を追加していく
 /////////////////////////////////////////////////////////////////////////////////////
