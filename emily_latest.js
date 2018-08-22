@@ -6,6 +6,7 @@ const Log = require("./Log.js");
 const Location = require("./Location.js");
 const ScrollMessage = require("./ScrollMessage.js");
 const createScrollMessage = ScrollMessage.createScrollMessage;
+//const Tutorial = require("./Tutorial.js");
 var bot = new Eris(process.env.BOT_KEY);
 
 // TOML読み込み関連
@@ -547,7 +548,7 @@ class EmilyState
 		let act = "";
 		switch(this.getState()) {
 			case STATE.NEUTRAL:
-				if(this.isTalking()) {
+				if(this.isTalking() && ch.type==CH_TYPE.GUILD_TEXT) {
 					act = ch.name + "でお話中です";
 				} else {
 					act = ch.name + "にいます";
@@ -956,15 +957,8 @@ var random_res_msg = new Array();
 // じゃんけんの勝敗メッセージ
 var rps_msg = new Array();
 
-// 歌詞データ
-var search_lyric_data = new Array();
-var res_lyric_data = new Array();
-
 // ランダムレスポンスのヘルプメッセージ
 var VISUAL_LESSON_MSG;
-
-// Sing機能のヘルプメッセージ
-var VOCAL_LESSON_MSG;
 
 var music_lib = new MusicLib();
 
@@ -1075,6 +1069,10 @@ try{
 		}
 	}
 
+//	if(Tutorial.onMessageCreate(msg)) {
+//		return;
+//	}
+	
 	if((res_msg = randomResponse(msg, random_res_msg)) != null) {
 		if(emily_state.getState() == STATE.SLEEPING) {
 			// 寝てるときはちょっと間をおいて喋る
@@ -1271,7 +1269,13 @@ function sendMsgWithTyping(ch_id, text, msec=500, aid=null)
 	if(aid != null) {
 		res_msg = replaceVariant(res_msg, aid);
 	}
-	bot.sendChannelTyping(ch_id);
+
+	if(ch_id.id == undefined) {
+		bot.sendChannelTyping(ch_id);
+	} else {
+		bot.sendChannelTyping(ch_id.id);
+	}
+
 	setTimeout(function() {
 		if(ch_id.id == undefined) {
 			bot.createMessage(ch_id, res_msg);
@@ -1480,6 +1484,10 @@ function responseFilterSleep(resMap, bool)
  */
 function responseFilterLocation(resMap, loc_match)
 {
+	if(resMap == null) {
+		return null;
+	}
+
 	let result = new Array();
 	for(let res of resMap) {
 		switch(res.location) {

@@ -209,13 +209,13 @@
 ]
 
 "(慰|なぐさ)めて" = [
-	{ res = "func側で処理", prob = 1, func = "resComfort" }
+	{ res = "func側で処理", prob = 1, func = "resComfort", location="any" }
 ]
 "(泣|な)きたい" = [
-	{ res = "func側で処理", prob = 1, func = "resComfort" }
+	{ res = "func側で処理", prob = 1, func = "resComfort", location="any" }
 ]
 "しんどい" = [
-	{ res = "func側で処理", prob = 1, func = "resComfort" }
+	{ res = "func側で処理", prob = 1, func = "resComfort", location="any" }
 ]
 
 "(じゃんけん.*ぽん|じゃんけん.*ぽん|あいこで.*しょ)" = [
@@ -297,6 +297,10 @@
 ]
 
 "エミリー.*(おいで|こっち)" = [
+	{ res="func側で処理", prob=1, func="resMoveChannel", affection=3, location="unmatch" }
+]
+
+"(おいで|こっち).*エミリー" = [
 	{ res="func側で処理", prob=1, func="resMoveChannel", affection=3, location="unmatch" }
 ]
 
