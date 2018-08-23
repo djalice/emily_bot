@@ -382,6 +382,7 @@ class EmilyState
 		this.state_cancel_timer = new Array();
 		this.location = new Location(bot_, log_);
 		this.location_move_timer = null;
+//		this.tutorial = new Tutorial(bot, this);
 	}
 
 	setState(s, aid=null) {
@@ -402,7 +403,7 @@ class EmilyState
 
 	getState(aid=null) {
 		if(aid != null) {
-			return this.personal_state[aid];
+			return this.personal_state[aid] != undefined ? this.personal_state[aid] : STATE.NEUTRAL;
 		} else {
 			return this.state;
 		}
@@ -1069,7 +1070,7 @@ try{
 		}
 	}
 
-//	if(Tutorial.onMessageCreate(msg)) {
+//	if(emily_state.tutorial.onMessageCreate(msg)) {
 //		return;
 //	}
 	
@@ -1596,12 +1597,22 @@ function playAlone()
 		return;
 	}
 
+	let ch = bot.getChannel(emily_state.location.channel);
+	bot.getMessage(ch.id, ch.lastMessageID)
+	.then((last_msg)=>{
+		Log.param(last_msg);
+		if(last_msg.author.bot) {
+			// そのチャンネルで最後に喋ったのがエミリーのときは鼻歌は歌わない
+			Log.state("playAlone skipped");
+			return;
+		} else {
 	let msg = new Object();
 	msg.channel = new Object();
 	msg.channel.id = emily_state.location.channel;
 	resSingPlease(msg, null, true);
 	emily_state.setPlayAloneTimer();
-	FUNCTION_LOG("playAlone() end");
+		}
+	});
 }
 
 // じゃんけんの勝敗チェック
@@ -1837,7 +1848,8 @@ $switch lunch`;
 		} else if(msg == "switch lunch") {
 			switch_lunch = switch_lunch ? false : true;
 			Log.state(`switch_lunch:${switch_lunch}`, true);
-		} else if(msg == "$test") {
+		}
+		if(TEST && msg == "$test") {
 		}
 	}
 }
