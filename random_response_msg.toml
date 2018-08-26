@@ -82,6 +82,10 @@
 #		any		チャンネルによらず常に反応
 #
 
+#"" = [
+#	{ res="", prob=1},
+#]
+
 "(にらめっこ|笑うと負けよ)" = [
 	{ res = ":daruma: あっぷっぷ！", prob = 1, func="resNiramekko", affection = 2 },
 ]
@@ -92,6 +96,9 @@
 	{ res = ":blush: %nickname%に触れられると、不思議と心がやわらぐのは何故なんでしょう…。ひょっとして、頭のツボに秘密があるのでしょうか…？", prob = 30, affection = 3 },
 	{ res = ":blush: %stutter_nick%…は、恥ずかしいでしゅ…", prob = 60, affection = 3 },
 	{ res = ":blush: えへへ…なんだかふわふわした気持ちになります…♪", prob = 30, affection = 3, unlock_affection = 500 },
+	{ res = ":smile: では私からも、な〜でな〜で♪\n[2000]…ふふっいかがですか？", prob = 30, affection = 3, type = "scroll"},
+	{ res = ":slightly: 仕掛け人さまの手、あたたかくて安心します…。", prob = 30 },
+	{ res = ":blush: （そっ、そういうのは二人きりの時にしていただけると…っ！）", prob = 30 },
 	{ res = ":sleeping: んん……ん～……（ごろん", prob = 100, affection = 0, sleep=true },
 	{ res = ":sleeping: んん……くしゅぐったいでしゅ……", prob = 100, affection = 1, sleep=true, unlock_affection = 200 },
 	{ res = ":smile: えへへ……くしゅぐったいでしゅ……♪", prob = 200, affection = 2, sleep=true, unlock_affection = 400 },
@@ -105,11 +112,15 @@
 	{ res = ":blush: そんな、かわいいだなんて…%nickname%に言われると、なんだか照れてしまいます…。", prob = 30, affection = 3 },
 	{ res = ":blush: （…えへへっ）", prob = 20, affection = 3, private = false },
 	{ res = ":blush: …えへへっ！（ぎゅーっ", prob = 5, affection = 10, public = false },
+	{ res = ":desyu: そんな、私なんて……えへへっ", prob = 30 },
+	{ res = ":smile: %nickname%も、いつもお茶目でかわいいと思いますよ♪", prob = 30 },
+	{ res = ":blush: あの、もっと…[2000]近くで聴かせてくださいませんか？", prob = 30, type="scroll" }
 ]
 
 "またね" = [
 	{ res = ":smile: はい、また遊びにいらしてくださいね♪", prob = 90 },
 	{ res = ":blush: もう、行ってしまわれるのですね…少し、寂しいです…。", prob = 30, unlock_affection = 500 },
+	{ res = ":blush: あの、…なるべく早く帰ってきてくださいね？", prob = 30 }
 ]
 
 "こんにちは" = [
@@ -146,10 +157,15 @@
 	{ res = ":blush: （こしょこしょ…）", prob = 10, func = "resLovecall", affection = 10, private = false },
 	{ res = ":smile: 私も%nickname%のことが…大好きですっ！…ふふっ♪", prob = 5, affection = 10, public = false },
 	{ res = ":blush: 私も、%nickname%のことが…その………です……。", prob = 10, affection = 5, public = false },
+	{ res = ":smile: ありがとうございます、とても嬉しいです♪", prob = 30 },
+	{ res = ":slightly: 私も、お慕いしておりますよ…%nickname%…。", prob = 5, affection = 10, public = false },
+	{ res = ":blush: そ、そういうは心の準備が出来てからに…！", prob = 10 },
+#	{ res = ":smile: ありがとうございます。\n私の気持ちは……言わずとも伝わってますよね？ふふっ♪", prob = 10, }
 ]
 
 "おはよ" = [
-	{ res = ":smile: おはようございます、%nickname%♪", prob = 1 },
+	{ res = ":smile: おはようございます、%nickname%♪", prob = 10 },
+	{ res = ":smile: はいっ！今日も元気に参りましょう！", prob = 10 }
 ]
 
 "こんばん" = [
@@ -157,14 +173,16 @@
 ]
 
 "おやす" = [
-	{ res = ":slightly: お疲れ様でした。ゆっくりお休みくださいね。", prob = 1 },
+	{ res = ":slightly: お疲れ様でした。ゆっくりお休みくださいね。", prob = 10 },
+	{ res = ":slightly: はい、では夢の中で、また。", prob = 10 }
 ]
 
 "(眠|ねむ)い" = [
 	{ res = ":thinking: 少しお休みになられては…無理をなさらないでくださいね。", prob = 50 },
 	{ res = ":thinking: じ、実は、正座の練習をしたいのですが～、どうしてもすぐ足を崩してしまうので～…ええっと…。\n:neutoral: そう！膝に乗せる重石が欲しくて…ですね！\n:blush: その、ちょうど、%nickname%の頭くらいの重さだと、よいのですが………いかがですか？", prob = 10 },
 	{ res = ":blush: お膝……お使いになりますか？", prob = 10 },
-	{ res = ":slightly: （すっ…）\n:smile: はいっ、いつでも頭を預けてくださいませ♪（ぽんぽんっ）", prob = 30, public = false }
+	{ res = ":slightly: （すっ…）\n:smile: はいっ、いつでも頭を預けてくださいませ♪（ぽんぽんっ）", prob = 30, public = false },
+	{ res = ":smile: ふ～っ……ふふっ眠気は覚めましたか？", prob = 30 }
 ]
 
 "ただいま" = [
@@ -175,12 +193,13 @@
 	{ res = ":smile: はいっ！ただいま、%nickname%♪おでかけ楽しかったです～！", prob = 1, affection = 2 }
 ]
 
-"(い|行)ってきます" = [
-	{ res = ":smile: お気をつけて。いってらっしゃいませ！", prob = 1 },
+"(い|行)って(くる|きます)" = [
+	{ res = ":smile: お気をつけて。いってらっしゃいませ！", prob = 1, location="any" },
 ]
 
 "いただきます" = [
-	{ res = ":slightly: 自然の恵みに、そして、私たちを日々応援してくださっているごヒイキさま方に感謝して…いただきます。", prob = 1 },
+	{ res = ":slightly: 自然の恵みに、そして、私たちを日々応援してくださっているごヒイキさま方に感謝して…いただきます。", prob = 10 },
+	{ res = ":smile: 健康の為にも、よく噛んで食べましょうね♪", prob = 10 }
 ]
 
 "ごちそうさま" = [
@@ -188,7 +207,8 @@
 ]
 
 "(疲|つか)れた" = [
-	{ res = ":neutoral: だ、大丈夫ですか！？私に出来ることは…あっ、肩でもお揉みしましょうか？お茶を入れてきますか？えっと、えっと…！\n:blush: …ほ、抱擁でも…？", prob = 1 }
+	{ res = ":neutoral: だ、大丈夫ですか！？私に出来ることは…あっ、肩でもお揉みしましょうか？お茶を入れてきますか？えっと、えっと…！\n:blush: …ほ、抱擁でも…？", prob = 10 },
+	{ res = ":thinking: 今日は早めにお休みになられてはいかがでしょう？少し、心配です……。", prob = 10 }
 ]
 
 "(大丈夫|平気)だよ" = [
