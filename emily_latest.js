@@ -439,8 +439,8 @@ class EmilyState
 		this.location.move(ID_TEAROOM, ID_SANDBOX);
 		this.setState(STATE.SLEEPING);
 		let res = randomResponsePick(sleep_msg['sleepin']);
-		sendMsg(ch_id, res.msg);
-		sendMsgWithTyping(ch_id, ":sleeping: すぅ…すぅ……", 5000);
+		sendMsg(this.location.channel, res.msg);
+		sendMsgWithTyping(this.location.channel, ":sleeping: すぅ…すぅ……", 5000);
 	}
 
 	// 眠りから目覚める
@@ -1082,6 +1082,7 @@ try{
 			// ランダム定型文を探して、あれば返答
 			res_msg.funcFire(msg);
 			if(msg.channel.type == CH_TYPE.GUILD_TEXT && res_msg.location != 'any') {
+				// ※DMやどこにいても反応する返答のときは状態やタイマーを変更しない
 				emily_state.setState(STATE.TALKING, aid);
 				emily_state.stopLocationMoveTimer();
 			}
@@ -1376,12 +1377,6 @@ function randomResponse(call_msg, callMap)
 				(call_msg.channel.type == CH_TYPE.DM) ||
 				(call_msg.channel.id == emily_state.location.channel);
 
-			resMap = responseFilterSleep(callMap[index], isSleep);
-			// 新たにフィルターを追加するときはこの下に配置
-			resMap = responseFilterLocation(resMap, isLocationMatch);
-			resMap = responseFilterMessageType(call_msg, resMap);
-			resMap = responseFilterAffection(resMap, user_note[call_msg.author.id]);
-
 			if(isSleep) {
 				if(resMap == null) {
 					resMap = new Array();
@@ -1389,6 +1384,13 @@ function randomResponse(call_msg, callMap)
 				// フィルターをかけた寝言はデフォルトと足してから抽選
 				resMap = resMap.concat(sleep_msg['sleeping']);
 			}
+
+			resMap = responseFilterSleep(callMap[index], isSleep);
+			// 新たにフィルターを追加するときはこの下に配置
+			resMap = responseFilterLocation(resMap, isLocationMatch);
+			resMap = responseFilterMessageType(call_msg, resMap);
+			resMap = responseFilterAffection(resMap, user_note[call_msg.author.id]);
+
 			res = randomResponsePick(resMap);
 			break;
 		} else {
@@ -1600,7 +1602,6 @@ function playAlone()
 	let ch = bot.getChannel(emily_state.location.channel);
 	bot.getMessage(ch.id, ch.lastMessageID)
 	.then((last_msg)=>{
-		Log.param(last_msg);
 		if(last_msg.author.bot) {
 			// そのチャンネルで最後に喋ったのがエミリーのときは鼻歌は歌わない
 			Log.state("playAlone skipped");
