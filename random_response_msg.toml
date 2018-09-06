@@ -124,7 +124,8 @@
 ]
 
 "こんにちは" = [
-	{ res = "funcで処理", prob = 1, func = "resHello" }
+	{ res = ":smile: あっ、 %nickname%♪", prob = 1, location="match" },
+	{ res = "ぱたぱたぱた…\n:smile: あっ、 %nickname%♪ 今、%emily_location%におりますので、ご用の際はお呼びくださいね。", prob = 1, location="unmatch" },
 ]
 
 "「.*」.*歌って" = [
@@ -164,12 +165,14 @@
 ]
 
 "おはよ" = [
-	{ res = ":smile: おはようございます、%nickname%♪", prob = 10 },
-	{ res = ":smile: はいっ！今日も元気に参りましょう！", prob = 10 }
+	{ res = ":smile: おはようございます、%nickname%♪", prob = 10, location="match" },
+	{ res = ":smile: はいっ！今日も元気に参りましょう！", prob = 10, location="match" },
+	{ res = "ぱたぱたぱた…\n:smile: あっ、%nickname%♪おはようございます！ 今、%emily_location%におりますので、ご用の際はお呼びくださいね。", prob = 10, location="unmatch" },
 ]
 
 "こんばん" = [
-	{ res = ":slightly: 遅くまでお疲れ様です、%nickname%。無理はなさらないでくださいね？", prob = 1 },
+	{ res = ":slightly: 遅くまでお疲れ様です、%nickname%。無理はなさらないでくださいね？", prob = 1, location="match" },
+	{ res = "ぱたぱたぱた…\n:slightly: あっ、%nickname%。遅くまでお疲れ様です。 今、%emily_location%におりますので、ご用の際はお呼びくださいね。", prob = 1, location="unmatch" },
 ]
 
 "おやす" = [

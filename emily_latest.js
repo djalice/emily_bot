@@ -1341,6 +1341,10 @@ function replaceVariant(text, id)
 		let aid = `<@${id}>`;
 		text = text.replace(/%mention%/g, aid);
 	}
+	if(text.match(/%emily_location%/g) != null) {
+		let clink = ` <#${emily_state.location.channel}> `;
+		text = text.replace(/%emily_location%/g, clink);
+	}
 	return text;
 }
 
