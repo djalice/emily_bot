@@ -328,7 +328,4 @@
 ]
 
 "test" = [
-	{ res="location match", prob=1, location="match"},
-	{ res="location unmatch", prob=1, location="unmatch"},
-	{ res="location any", prob=1, location="any"}
 ]
