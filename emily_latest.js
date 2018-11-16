@@ -36,7 +36,7 @@ const REACTION_FEEL_MATCHA_POWER = 'e_desyu:415856247443685376';// チェック�
 const CALL_NAME = "エミリー";				// いわゆるプレフィックス
 
 const STATE_CANCEL_TIME = 3* 60 * 1000;	// ユーザー毎の状態をクリアするまでの時間
-const LOCATION_MOVE_INTERVAL = 45* 60*1000;
+const LOCATION_MOVE_INTERVAL = 60 * 60*1000;
 const SELECT_MENU_INTERVAL = 5 * 60 * 1000;	// 食事のメニューを選ぶ間隔
 const EAT_INTERVAL = 10 * 60 * 1000;		// 食事を食べる間隔
 
@@ -769,7 +769,7 @@ class Cron
 					}
 					break;
 				case 15:
-					sendMsg(ID_SANDBOX, `:smile: ${moment().hour()}時ですっ♪`);
+					// sendMsg(ID_SANDBOX, `:smile: ${moment().hour()}時ですっ♪`);
 					break;
 				default:
 					break;
@@ -1106,7 +1106,7 @@ try{
 			// エミリーとユーザーが別のチャンネルにいるときの反応
 			if(emily_state.getState() != STATE.SLEEPING
 				&& isCall(msg.content)
-				&& rand<30
+				&& rand<10
 			) {
 				// チャンネルが違うところで呼ばれたら反応だけする
 				sendMsg(emily_state.location.channel, ":blush: （あら…呼ばれたかしら…）");
