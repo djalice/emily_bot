@@ -1081,8 +1081,8 @@ try{
 		} else {
 			// ランダム定型文を探して、あれば返答
 			res_msg.funcFire(msg);
-			if(msg.channel.type == CH_TYPE.GUILD_TEXT && res_msg.location != 'any') {
-				// ※DMやどこにいても反応する返答のときは状態やタイマーを変更しない
+			// 「お話し中」にするかどうか
+			if(msg.channel.type == CH_TYPE.GUILD_TEXT && res_msg.location == 'match') {
 				emily_state.setState(STATE.TALKING, aid);
 				emily_state.stopLocationMoveTimer();
 			}
