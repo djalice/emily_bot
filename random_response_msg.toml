@@ -97,7 +97,7 @@
 	{ res = ":blush: %stutter_nick%…は、恥ずかしいでしゅ…", prob = 60, affection = 3 },
 	{ res = ":blush: えへへ…なんだかふわふわした気持ちになります…♪", prob = 30, affection = 3, unlock_affection = 500 },
 	{ res = ":smile: では私からも、な〜でな〜で♪\n[2000]…ふふっいかがですか？", prob = 30, affection = 3, type = "scroll"},
-	{ res = ":slightly: %nick_name%の手、あたたかくて安心します…。", prob = 30 },
+	{ res = ":slightly: %nickname%の手、あたたかくて安心します…。", prob = 30 },
 	{ res = ":blush: （そっ、そういうのは二人きりの時にしていただけると…っ！）", prob = 30 },
 	{ res = ":sleeping: んん……ん～……（ごろん", prob = 100, affection = 0, sleep=true },
 	{ res = ":sleeping: んん……くしゅぐったいでしゅ……", prob = 100, affection = 1, sleep=true, unlock_affection = 200 },
