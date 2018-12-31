@@ -328,4 +328,5 @@
 ]
 
 "test" = [
+	{ res="test", prob=1 }
 ]
