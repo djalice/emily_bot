@@ -82,7 +82,8 @@ const func_list = {
 	"resDeleteAnnounce" : resDeleteAnnounce,
 	"resShowAnnounce" : resShowAnnounce,
 	"resCatLanguage" : resCatLanguage,
-	"resMoveChannel" : resMoveChannel
+	"resMoveChannel" : resMoveChannel,
+	"resHappyBirthday" : resHappyBirthday
 };
 /////////////////////////////////////////////////////////////////////////////////////
 class ResponseMessage
@@ -269,6 +270,7 @@ class UserNote
 		this.schedule = new Array();
 		this.schedule_tmp = new Array();
 		this.present_limit = null;
+		this.reaction_notify = new Array();
 	}
 
 	readToml(id) {
@@ -466,7 +468,7 @@ class EmilyState
 	}
 
 	// 親愛度が一定数を越える毎にプレゼントを贈る
-	present(msg) {
+	present(msg, nomsg=false) {
 		var gid = ID_TEAROOM;
 		var aid = msg.author.id;
 		var rid;
@@ -487,8 +489,10 @@ class EmilyState
 				let role_name = role.name.toString();
 				let item_name = role_name.replace("エミリーに貰った", "");
 				let res_msg = `:blush: あの、%nickname%…日頃の感謝をこめて、ささやかながら贈り物をさせてくださいませんか？…はい。\n\`\`\`エミリーから"${item_name}"をもらった\n※本日から1週間、役職"${role_name}"が付与されます。\`\`\``;
-				sendDM(msg.author, res_msg);
-				user_note[aid].affection_period += 100;
+				if(nomsg == false) {
+					sendDM(msg.author, res_msg);
+					user_note[aid].affection_period += 100;
+				}
 				user_note[aid].present_limit = moment().add(8, 'd'); // 期限は7日（8日目の0時に消す
 				user_note[aid].writeToml();
 	
@@ -879,6 +883,13 @@ const foods = {
 	'🥖' : ['フランスパン',	'main',	'like',	''],
 	'🥘' : ['パエリア',		'main',	'like',	''],
 	'🥙' : ['ピタサンド',	'main',	'like',	''],
+	'🐟' : ['魚',	'sub',	'like',	''],
+	'🐙' : ['タコ',	'sub',	'like',	''],
+	'🦑' : ['イカ',	'sub',	'like',	''],
+	'🦀' : ['カニ',	'sub',	'like',	''],
+	'🦐' : ['エビ',	'sub',	'like',	''],
+	'🌰' : ['栗',	'sub',	'like',	''],
+	'🍄' : ['キノコ',	'sub',	'like',	''],
 	'🍅' : ['トマト',	'sub',	'like',	''],
 	'🍆' : ['茄子',		'sub',	'like',	''],
 	'🌶' : ['唐辛子',	'sub',	'like',	''],
@@ -1188,6 +1199,33 @@ bot.on("messageReactionAdd", (msg, emoji, uid) => {
 			}
 		});
 	}
+/*
+	// リアクションがついた
+	bot.getMessage(msg.channel.id, msg.id)
+	.then((m)=>{
+		let count =  0;
+		for(r in m.reactions) {
+			if(m.reactions[r].me == false) {
+				count += m.reactions[r].count;
+			}
+		}
+
+		if(user_note[msg.author.id].reaction_notify[msg.id] === undefined) {
+			// リアクション通知の情報がなければ新規作成
+			let reaction_notify = new Array();
+			reaction_notify.count = 0;
+			reaction_notify.notify = false;
+			user_note[msg.author.id].reaction_notify[msg.id] = reaction_notify;
+		}
+
+		if(count > user_note[msg.author.id].reaction_notify.count) {
+			// 前回と比較
+			// 増えていたら通知フラグをたてる
+			user_note[msg.author.id].reaction_notify.notify = true;
+			user_note[msg.author.id].reaction_notify.count = count;
+		}
+	});
+*/
 });
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -2551,6 +2589,13 @@ function resMoveChannel(call_msg, res)
 		emily_state.setState(STATE.TALKING, call_msg.author.id);
 		emily_state.stopLocationMoveTimer();
 	}
+}
+
+function resHappyBirthday(call_msg, res)
+{
+	let msg = replaceVariant(replaceEmoji(res.msg), call_msg.author.id);
+	createScrollMessage(bot, call_msg.channel.id, msg, null);
+	emily_state.present(call_msg, true);
 }
 // ↑↑↑ここに固有処理を追加していく
 /////////////////////////////////////////////////////////////////////////////////////
