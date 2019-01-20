@@ -656,7 +656,7 @@ class Lunch
 		setTimeout(function(){
 			sendMsg(t.channel, ":blush: もぐもぐ" + meal.name)
 			.then(msg => {
-				Log.state(`${meal.name}を食べました`, true);
+				Log.state(`${meal.name}を食べました`, false);
 				t.eat_msg_ids.push(msg.id);
 			});
 		}, EAT_INTERVAL);
