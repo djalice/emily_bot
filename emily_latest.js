@@ -749,7 +749,8 @@ class Cron
 					//calender();
 					break;
 				case 11:
-					// 11:50くらいに他チャンネルにいたら戻る
+/*
+				// 11:50くらいに他チャンネルにいたら戻る
 					setTimeout(function(){
 						let cid = emily_state.location.channel;
 						let is_talking = emily_state.isTalking();
@@ -760,8 +761,10 @@ class Cron
 							emily_state.stopLocationMoveTimer(); // 移動しないように一旦タイマーストップ
 						}
 					}, 50*60*1000);
+*/
 					break;
 				case 12:
+/*
 					emily_state.location.move(ID_TEAROOM, ID_SANDBOX);
 					emily_state.refleshActivity();
 					emily_state.stopLocationMoveTimer();
@@ -771,6 +774,7 @@ class Cron
 							lunch.start();
 						}, 3*60*1000);
 					}
+*/
 					break;
 				case 15:
 					// sendMsg(ID_SANDBOX, `:smile: ${moment().hour()}時ですっ♪`);
@@ -1140,6 +1144,7 @@ bot.connect();
 /////////////////////////////////////////////////////////////////////////////////////
 // リアクションが追加された
 bot.on("messageReactionAdd", (msg, emoji, uid) => {
+/*
 	if(emily_state.getState() == STATE.LUNCH_SELECT && msg.id == lunch.select_menu_msg_id) {
 		// メニュー決めのメッセージについたら献立に追加
 		// 追加できるのは食べ物リスト内のドリンク以外
@@ -1180,7 +1185,7 @@ bot.on("messageReactionAdd", (msg, emoji, uid) => {
 			}
 		}
 	}
-
+*/
 	// 抹茶チャンネルのリアクションを拾う
 	if(msg.channel.id == ID_MATCHA_CH) {
 		bot.getMessage(msg.channel.id, msg.id)
