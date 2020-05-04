@@ -513,6 +513,7 @@ class EmilyState
 	// チャンネル間を移動する
 	startLocationMoveTimer() {
 		Log.state("startLocationMoveTimer()");
+/*
 		if(this.location_move_timer != null) {
 			clearInterval(this.location_move_timer);
 		}
@@ -522,6 +523,7 @@ class EmilyState
 			t.location.move(ID_TEAROOM);
 			t.refleshActivity();
 		}, LOCATION_MOVE_INTERVAL);
+*/
 	}
 
 	// チャンネル間の移動を中止する
@@ -2586,6 +2588,7 @@ function resCatLanguage(call_msg, res)
 
 function resMoveChannel(call_msg, res)
 {
+/*
 	if(isCall(call_msg.content) && call_msg.channel.type == CH_TYPE.GUILD_TEXT && emily_state.isMovable()) {
 		Log.state("ユーザーの呼び出しによりチャンネルを移動", true);
 		emily_state.location.move(call_msg.channel.guild.id, call_msg.channel.id);
@@ -2594,6 +2597,7 @@ function resMoveChannel(call_msg, res)
 		emily_state.setState(STATE.TALKING, call_msg.author.id);
 		emily_state.stopLocationMoveTimer();
 	}
+*/
 }
 
 function resHappyBirthday(call_msg, res)
