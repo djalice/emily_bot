@@ -7,7 +7,7 @@
     "start": "node emily_latest.js"
   },
   "dependencies": {
-    "async": "^2.6.0",
+    "async": "^3.2.2",
     "dotenv": "^5.0.1",
     "eris": "^0.8.5",
     "moment": "^2.22.1",
